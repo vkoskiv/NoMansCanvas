@@ -27,6 +27,7 @@ extension Droplet {
 			func initialAuth() {
 				//TODO: Check for IP ban here
 				user = User(ip: req.peerHostname!)
+				user?.socket = ws
 				canvas.connections[(user?.uuid)!] = ws
 				//Return generated UUID
 				let structure: [String: NodeRepresentable] = [
@@ -37,7 +38,28 @@ extension Droplet {
 					return
 				}
 				
-				canvas.sendJSON(to: user!, json: json)
+				user?.sendJSON(json: json)
+			}
+			
+			func sendCanvas() {
+				var structure: [[String: NodeRepresentable]] = [[:]]
+				for tile in canvas.tiles {
+					structure.append([
+						"x": tile.pos.x,
+						"y": tile.pos.y,
+						"ID":tile.color.ID])
+				}
+				guard let json = try? JSON(node: structure) else {
+					return
+				}
+				user?.sendJSON(json: json)
+			}
+			
+			func handleTilePlace() {
+				//Make sure coords are good
+				//Make sure userID is valid
+				//Make sure color is valid
+				
 			}
 			
 			//Received JSON request from client
@@ -48,8 +70,10 @@ extension Droplet {
 					switch (reqType) {
 						case "initialAuth":
 							initialAuth()
-						case "getCanvas": break
-						case "postTile": break
+						case "getCanvas":
+							sendCanvas()
+						case "postTile":
+							handleTilePlace()
 						case "getTileData": break
 						default: break
 					}
@@ -61,7 +85,7 @@ extension Droplet {
 				guard let u = user else {
 					return
 				}
-				print("User \(u.uuid) disconnected")
+				print("User \(u.uuid) at \(u.ip) disconnected")
 				canvas.connections.removeValue(forKey: u.uuid)
 			}
 		}
