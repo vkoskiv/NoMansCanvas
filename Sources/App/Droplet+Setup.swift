@@ -2,7 +2,6 @@
 
 let canvas = Canvas()
 
-
 /*
 TODO:
 
@@ -20,6 +19,8 @@ extension Droplet {
 		
         //Set up websocket
 		socket("canvas") { req, ws in
+			
+			print("User connected")
 			
 			var user: User? = nil
 			
@@ -57,7 +58,11 @@ extension Droplet {
 			
 			//Connection closed
 			ws.onClose = { ws in
-				
+				guard let u = user else {
+					return
+				}
+				print("User \(u.uuid) disconnected")
+				canvas.connections.removeValue(forKey: u.uuid)
 			}
 		}
     }
