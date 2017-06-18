@@ -55,10 +55,35 @@ extension Droplet {
 				user?.sendJSON(json: json)
 			}
 			
-			func handleTilePlace() {
-				//Make sure coords are good
+			func handleTilePlace(json: JSON) {
 				//Make sure userID is valid
 				//Make sure color is valid
+				
+				//First get params
+				//params: userID, X+Y coords, colorID
+				guard let userID = json.object?["userID"]?.string else {
+					//Return error
+					return
+				}
+				guard let Xcoord = json.object?["X"]?.int else {
+					//Return error
+					return
+				}
+				guard let Ycoord = json.object?["Y"]?.int else {
+					//Return error
+					return
+				}
+				guard let colorID = json.object?["colorID"]?.int else {
+					//Return error
+					return
+				}
+				//Make sure coords are good
+				if Xcoord > canvas.width {
+					//Return error
+				}
+				if Ycoord > canvas.height {
+					//Return error
+				}
 				
 			}
 			
@@ -73,7 +98,7 @@ extension Droplet {
 						case "getCanvas":
 							sendCanvas()
 						case "postTile":
-							handleTilePlace()
+							handleTilePlace(json: json)
 						case "getTileData": break
 						default: break
 					}
