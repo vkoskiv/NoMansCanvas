@@ -17,6 +17,23 @@ class Canvas {
 		//We've received a tile change, it's been approved, send that update to ALL connected clients
 	}
 	
+	//Send to a specific user
+	func sendJSON(to: User, json: JSON) {
+		for (uuid, socket) in connections {
+			guard uuid != to.uuid else{
+				continue
+			}
+			try? socket.send(json.string!)
+		}
+	}
+	
+	//Send to all users
+	func sendJSON(json: JSON) {
+		for (_, socket) in connections {
+			try? socket.send(json.string!)
+		}
+	}
+	
 	//Init canvas, load it from the DB here
 	init() {
 		connections = [:]
