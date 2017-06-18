@@ -21,20 +21,32 @@ extension Droplet {
         //Set up websocket
 		socket("canvas") { req, ws in
 			
-			//var user: User? = nil
+			var user: User? = nil
+			
+			func initialAuth() {
+				//TODO: Check for IP ban here
+				user = User(ip: req.peerHostname!)
+				canvas.connections[(user?.uuid)!] = ws
+				//Return generated UUID
+				let structure: [String: NodeRepresentable] = [
+					"response": "authSuccessful",
+					"uuid": user?.uuid]
+				
+				guard let json = try? JSON(node: structure) else {
+					return
+				}
+				
+				canvas.sendJSON(to: user!, json: json)
+			}
 			
 			//Received JSON request from client
 			ws.onText = { ws, text in
-				//Handle different request types
-				//initial auth, tile post, getCanvas
-				//getTileData when highlight pixel, who edited it last? RGB value?
-				
 				//TODO: Session tokens if we have time for that
-				
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
 					switch (reqType) {
-						case "initialAuth": break
+						case "initialAuth":
+							initialAuth()
 						case "getCanvas": break
 						case "postTile": break
 						case "getTileData": break
