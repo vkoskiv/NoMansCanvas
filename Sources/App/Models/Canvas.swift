@@ -31,7 +31,7 @@ class Canvas {
 	//Send to all users
 	func sendJSON(json: JSON) {
 		for (_, socket) in connections {
-			try? socket.send(json.string!)
+			try? socket.send(json.serialize().makeString())
 		}
 	}
 	
