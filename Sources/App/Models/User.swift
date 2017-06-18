@@ -13,6 +13,7 @@ class User {
 	var username: String? = nil //Username is optional
 	var uuid: String			//uuid is mandatory
 	var ip: String
+	var socket: WebSocket!
 	
 	var availableColors: [TileColor]
 	var remainingTiles: Int
@@ -36,6 +37,10 @@ class User {
 		self.remainingTiles = 0
 		self.lastConnected = Date() //Unused for now
 		self.ip = ""
+	}
+	
+	func sendJSON(json: JSON) {
+		try? self.socket.send(json.serialize().makeString())
 	}
 	
 	class func randomUUID(length: Int) -> String {
