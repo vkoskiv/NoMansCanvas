@@ -24,7 +24,7 @@ class Canvas {
 	//Send to a specific user
 	func sendJSON(to: User, json: JSON) {
 		for (uuid, socket) in connections {
-			guard uuid != to.uuid else{
+			guard uuid == to.uuid else{
 				continue
 			}
 			try? socket.send(json.serialize().makeString())
