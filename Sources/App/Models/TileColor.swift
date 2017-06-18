@@ -9,5 +9,11 @@
 import Vapor
 
 class TileColor {
+	var ID: Int
+	
+	init() {
+		self.ID = 4
+	}
+	
 	//let defaultColors: [Int: TileColor] = [4: TileColor(), 5: TileColor()]
 }
