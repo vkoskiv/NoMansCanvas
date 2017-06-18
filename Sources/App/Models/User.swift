@@ -21,7 +21,7 @@ class User {
 	//New user
 	init(ip: String) {
 		//TODO: Check from DB to make sure this UUID doesn't exist already.
-		self.uuid = randomUUID(length: 20)
+		self.uuid = User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 50
 		self.lastConnected = Date()
@@ -29,20 +29,24 @@ class User {
 	}
 	
 	//Existing user
-	init(uuid: String, ip: String) {
+	init(uuid: String) {
 		//Get other params from DB
 		self.uuid = uuid
 		self.availableColors = []
 		self.remainingTiles = 0
 		self.lastConnected = Date() //Unused for now
-		self.ip = ip
+		self.ip = ""
 	}
 	
-	func randomUUID(length: Int) -> String {
+	class func randomUUID(length: Int) -> String {
 		let charset: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 		var randString: String = ""
 		for _ in 0..<length {
+			#if os(Linux)
+			randString.append(charset[charset.index(charset.startIndex, offsetBy: Int(random() % Int(charset.characters.count)))])
+			#else
 			randString.append(charset[charset.index(charset.startIndex, offsetBy: Int(arc4random_uniform(UInt32(charset.characters.count))))])
+			#endif
 		}
 		return randString
 	}

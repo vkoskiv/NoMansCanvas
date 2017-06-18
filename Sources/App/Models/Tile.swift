@@ -23,6 +23,6 @@ class Tile {
 		pos = Coord()
 		color = TileColor()
 		placeTime = Date()
-		placer = User()
+		placer = User(uuid: "")
 	}
 }
