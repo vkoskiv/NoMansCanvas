@@ -12,6 +12,9 @@ class Canvas {
 	//Connection is a key-val pair; userID:WebSocket
 	//Consider making User hashable somehow? And have User:WebSocket keyval pairs
 	var connections: [String: WebSocket]
+	var tiles: [Tile] = []
+	var width: Int = 100
+	var height: Int = 100
 	
 	func updateTileToClients() {
 		//We've received a tile change, it's been approved, send that update to ALL connected clients
@@ -38,6 +41,13 @@ class Canvas {
 	//Init canvas, load it from the DB here
 	init() {
 		connections = [:]
+		for y in 0..<height {
+			for x in 0..<width {
+				let tile = Tile()
+				tile.pos = Coord(x: x, y: y)
+				self.tiles.append(tile)
+			}
+		}
 	}
 	
 }

@@ -11,6 +11,11 @@ import Vapor
 class Coord {
 	var x: Int = 0
 	var y: Int = 0
+	
+	init(x: Int, y: Int) {
+		self.x = x
+		self.y = y
+	}
 }
 
 class Tile {
@@ -20,7 +25,7 @@ class Tile {
 	var placer: User
 	
 	init() {
-		pos = Coord()
+		pos = Coord(x: 0, y: 0)
 		color = TileColor()
 		placeTime = Date()
 		placer = User(uuid: "")
