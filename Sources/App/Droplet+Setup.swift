@@ -60,7 +60,7 @@ extension Droplet {
 			//TODO: Use a raw base64 binary for this possibly
 			//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
 			func sendCanvas(json: JSON) {
-				var structure: [[String: NodeRepresentable]] = [[:]]
+				var structure = [[String: NodeRepresentable]]()
 				structure.append(["responseType": "fullCanvas"])
 				for tile in canvas.tiles {
 					structure.append([
