@@ -8,7 +8,7 @@
 
 import Vapor
 
-class User {
+class User: Hashable {
 	//funcs for UUID gen, username store, getUser from DB, etc
 	var username: String? = nil //Username is optional
 	var uuid: String			//uuid is mandatory
@@ -18,6 +18,10 @@ class User {
 	var availableColors: [TileColor]
 	var remainingTiles: Int
 	var lastConnected: Date //Used to keep track of accumulated tiles while disconnected
+	
+	var hashValue: Int {
+		return self.uuid.hashValue
+	}
 	
 	//New user
 	init(ip: String) {
@@ -55,4 +59,8 @@ class User {
 		}
 		return randString
 	}
+}
+
+func ==(lhs: User, rhs: User) -> Bool {
+	return lhs.uuid.hashValue == rhs.uuid.hashValue
 }
