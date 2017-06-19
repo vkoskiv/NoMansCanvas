@@ -76,13 +76,13 @@ extension Droplet {
 			
 			func userForUUID(uuid: String) -> User {
 				//return canvas.connections.index(forKey: uuid)
-				var user: User!
+				/*var user: User!
 				canvas.connections.forEach { dict in
 					if dict.key.uuid == uuid {
 						user = dict.key
 					}
-				}
-				return user
+				}*/
+				return User(uuid: "1")
 			}
 			
 			func colorForID(colorID: Int) -> TileColor {
