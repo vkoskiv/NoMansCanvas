@@ -171,14 +171,49 @@ extension Droplet {
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
 		}
 		
+		/*
+		case invalidUserID
+		case noUserID
+		case userIPBanned
+		case parameterMissingX
+		case parameterMissingY
+		case invalidCoordinates
+		case invalidColorID
+		case parameterMissingColorID
+		case none
+		*/
+		
 		//Error handling
-		func sendError(error: Error, socket: WebSocket) {
+		func sendError(error: BackendError, socket: WebSocket) {
 			var errorMessage = String()
 			switch error {
-			case BackendError.none: break
-			default:
-				abort()
+			case .none:
+				errorMessage = "No error!"
+			case .invalidUserID:
+				errorMessage = "Invalid user ID provided"
+			case .noUserID:
+				errorMessage = "No user ID provided (get it with initialAuth)"
+			case .userIPBanned:
+				errorMessage = "Server authentication error"
+			case .parameterMissingX:
+				errorMessage = "Missing X coordinate"
+			case .parameterMissingY:
+				errorMessage = "Missing Y coordinate"
+			case .invalidCoordinates:
+				errorMessage = "Invalid coordinates provided"
+			case .invalidColorID:
+				errorMessage = "Invalid color ID provided"
+			case .parameterMissingColorID:
+				errorMessage = "Missing color ID parameter"
+			default: break
 			}
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "error",
+			                  "errorMessage": errorMessage])
+			guard let json = try? JSON(node: structure) else {
+				return
+			}
+			try? socket.send(json.serialize().makeString())
 		}
 		
     }
@@ -210,5 +245,6 @@ Response types ("responseType"):
 - "authSuccessful", params: "uuid"
 - "fullCanvas", params: Array of "X", "Y", "colorID"
 - "colorList",  params: Array of "R", "G", "B", "ID"
+- "error"		params: "errorMessage", Error message in human-readable form
 */
 
