@@ -28,7 +28,7 @@ extension Droplet {
 				//TODO: Check for IP ban here
 				user = User(ip: req.peerHostname!)
 				user?.socket = ws
-				canvas.connections[(user?.uuid)!] = ws
+				canvas.connections[user!] = ws
 				//Return generated UUID
 				let structure: [String: NodeRepresentable] = [
 					"response": "authSuccessful",
@@ -55,36 +55,51 @@ extension Droplet {
 				user?.sendJSON(json: json)
 			}
 			
+			func userForUUID(uuid: String) -> User {
+				//return canvas.connections.index(forKey: uuid)
+				var user: User!
+				canvas.connections.forEach { dict in
+					if dict.key.uuid == uuid {
+						user = dict.key
+					}
+				}
+				return user
+			}
+			
+			func colorForID(colorID: Int) -> TileColor {
+				var color: TileColor!
+				canvas.colors.forEach { c in
+					if c.ID == colorID {
+						color = c
+					}
+				}
+				return color
+			}
+			
 			func handleTilePlace(json: JSON) {
 				//Make sure userID is valid
 				//Make sure color is valid
 				
 				//First get params
-				//params: userID, X+Y coords, colorID
-				guard let userID = json.object?["userID"]?.string else {
-					//Return error
-					return
-				}
-				guard let Xcoord = json.object?["X"]?.int else {
-					//Return error
-					return
-				}
-				guard let Ycoord = json.object?["Y"]?.int else {
-					//Return error
-					return
-				}
-				guard let colorID = json.object?["colorID"]?.int else {
-					//Return error
-					return
-				}
-				//Make sure coords are good
-				if Xcoord > canvas.width {
-					//Return error
-				}
-				if Ycoord > canvas.height {
-					//Return error
+				guard let userID = json.object?["userID"]?.string,
+					let Xcoord = json.object?["X"]?.int, Xcoord <= canvas.width,
+					let Ycoord = json.object?["Y"]?.int, Ycoord <= canvas.height,
+					let colorID = json.object?["colorID"]?.int else {
+						//Reply with some error message
+						return
 				}
 				
+				//Verifications here (uuid valid? tiles available? etc)
+				//TODO
+				//Then store this action to DB
+				
+				//Then update canvas
+				canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
+				canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorForID(colorID: colorID)
+				canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Date() //This current time
+				
+				//And finally send this update out to other clients
+				canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
 			}
 			
 			//Received JSON request from client
@@ -111,7 +126,7 @@ extension Droplet {
 					return
 				}
 				print("User \(u.uuid) at \(u.ip) disconnected")
-				canvas.connections.removeValue(forKey: u.uuid)
+				canvas.connections.removeValue(forKey: u)
 			}
 		}
     }

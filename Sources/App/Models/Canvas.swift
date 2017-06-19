@@ -9,26 +9,17 @@
 import Vapor
 
 class Canvas {
-	//Connection is a key-val pair; userID:WebSocket
-	//Consider making User hashable somehow? And have User:WebSocket keyval pairs
-	var connections: [String: WebSocket]
+	//Connection is a key-val pair; User:WebSocket
+	var connections: [User: WebSocket]
 	var tiles: [Tile] = []
 	var width: Int = 100
 	var height: Int = 100
 	
-	func updateTileToClients() {
-		//We've received a tile change, it's been approved, send that update to ALL connected clients
-	}
+	//Colors, people may add additional ones
+	var colors: [TileColor]
 	
-	//FIXME: Consider user.sendJSON(somejson)
-	//Send to a specific user
-	func sendJSON(to: User, json: JSON) {
-		for (uuid, socket) in connections {
-			guard uuid == to.uuid else{
-				continue
-			}
-			try? socket.send(json.serialize().makeString())
-		}
+	func updateTileToClients(tile: Tile) {
+		//We've received a tile change, it's been approved, send that update to ALL connected clients
 	}
 	
 	//Send to all users
@@ -41,6 +32,14 @@ class Canvas {
 	//Init canvas, load it from the DB here
 	init() {
 		connections = [:]
+		//Add some default colors: red, green, blue, black
+		colors = [
+			TileColor(color: Color(with: 255, green: 0, blue: 0),		id: 0),//Red
+			TileColor(color: Color(with: 0, green: 255, blue: 0),		id: 1),//Green
+			TileColor(color: Color(with: 0, green: 0, blue: 255),		id: 2),//Blue
+			TileColor(color: Color(with: 255, green: 255, blue: 255),	id: 3),//White
+			TileColor(color: Color(with: 0, green: 0, blue: 0),			id: 4)]//Black
+		//init the tiles
 		for y in 0..<height {
 			for x in 0..<width {
 				let tile = Tile()

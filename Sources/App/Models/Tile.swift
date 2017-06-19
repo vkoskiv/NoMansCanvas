@@ -20,13 +20,13 @@ class Coord {
 
 class Tile {
 	var pos: Coord
-	var color: TileColor
+	var color: Int //Color ID
 	var placeTime: Date
 	var placer: User
 	
 	init() {
 		pos = Coord(x: 0, y: 0)
-		color = TileColor()
+		color = 3
 		placeTime = Date()
 		placer = User(uuid: "")
 	}
