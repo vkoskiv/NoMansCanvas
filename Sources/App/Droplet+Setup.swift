@@ -12,6 +12,18 @@ getTileData (User has highlighted a tile, client sends this to get the info for 
 getUserStats (client has UUID, is returning, parameters: UUID) returns player stats
 */
 
+enum BackendError: Error {
+	case invalidUserID
+	case noUserID
+	case userIPBanned
+	case parameterMissingX
+	case parameterMissingY
+	case invalidCoordinates
+	case invalidColorID
+	case parameterMissingColorID
+	case none
+}
+
 extension Droplet {
     public func setup() throws {
 		//Set up routes
@@ -24,69 +36,26 @@ extension Droplet {
 			
 			var user: User? = nil
 			
-			func userForUUID(uuid: String) -> User {
-				//return canvas.connections.index(forKey: uuid)
-				/*var user: User!
-				canvas.connections.forEach { dict in
-					if dict.key.uuid == uuid {
-						user = dict.key
-					}
-				}*/
-				return User(uuid: "1")
-			}
-			
-			func colorForID(colorID: Int) -> TileColor {
-				var color: TileColor!
-				canvas.colors.forEach { c in
-					if c.ID == colorID {
-						color = c
-					}
-				}
-				return color
-			}
-			
-			func handleTilePlace(json: JSON) {
-				//Make sure userID is valid
-				//Make sure color is valid
-				
-				//First get params
-				guard let userID = json.object?["userID"]?.string,
-					let Xcoord = json.object?["X"]?.int, Xcoord <= canvas.width,
-					let Ycoord = json.object?["Y"]?.int, Ycoord <= canvas.height,
-					let colorID = json.object?["colorID"]?.int else {
-						//Reply with some error message
-						return
-				}
-				
-				//Verifications here (uuid valid? tiles available? etc)
-				//TODO
-				//Then store this action to DB
-				
-				//Then update canvas
-				canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
-				canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
-				canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Date() //This current time
-				
-				//And finally send this update out to other clients
-				canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
-			}
-			
 			//Received JSON request from client
 			webSocket.onText = { ws, text in
 				//TODO: Session tokens if we have time for that
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
-					switch (reqType) {
+					do {
+						switch (reqType) {
 						case "initialAuth":
-							user = initialAuth(message: message, socket: webSocket)
+							user = try initialAuth(message: message, socket: webSocket)
 						case "getCanvas":
-							sendCanvas(json: json, user: user!)
+							try sendCanvas(json: json, user: user!)
 						case "postTile":
-							handleTilePlace(json: json)
+							try handleTilePlace(json: json)
 						case "getColors":
-							sendColors(json: json, user: user!)
+							try sendColors(json: json, user: user!)
 						case "getTileData": break
 						default: break
+						}
+					} catch {
+						sendError(error: error, socket: webSocket)
 					}
 				}
 			}
@@ -102,7 +71,7 @@ extension Droplet {
 		}
 		
 		//Authentication
-		func initialAuth(message: Request, socket: WebSocket) -> User {
+		func initialAuth(message: Request, socket: WebSocket) throws -> User {
 			let user = User()
 			user.ip = message.peerHostname!
 			user.socket = socket
@@ -113,17 +82,36 @@ extension Droplet {
 			structure.append(["responseType": "authSuccessful",
 			                  "uuid": user.uuid])
 			
-			guard let json = try? JSON(node: structure) else {
-				return User()
-			}
+			let json = try JSON(node: structure)
 			
 			user.sendJSON(json: json)
 			
 			return user
 		}
 		
+		func userForUUID(uuid: String) -> User {
+			//return canvas.connections.index(forKey: uuid)
+			/*var user: User!
+			canvas.connections.forEach { dict in
+			if dict.key.uuid == uuid {
+			user = dict.key
+			}
+			}*/
+			return User(uuid: "1")
+		}
+		
+		func colorForID(colorID: Int) -> TileColor {
+			var color: TileColor!
+			canvas.colors.forEach { c in
+				if c.ID == colorID {
+					color = c
+				}
+			}
+			return color
+		}
+		
 		// Responses
-		func sendColors(json: JSON, user: User) {
+		func sendColors(json: JSON, user: User) throws {
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "colorList"])
 			for color in canvas.colors {
@@ -141,7 +129,7 @@ extension Droplet {
 		
 		//TODO: Use a raw base64 binary for this possibly
 		//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
-		func sendCanvas(json: JSON, user: User) {
+		func sendCanvas(json: JSON, user: User) throws {
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "fullCanvas"])
 			for tile in canvas.tiles {
@@ -155,6 +143,44 @@ extension Droplet {
 			}
 			user.sendJSON(json: json)
 		}
+		
+		//User requests
+		func handleTilePlace(json: JSON) throws {
+			//Make sure userID is valid
+			//Make sure color is valid
+			
+			//First get params
+			guard let userID = json.object?["userID"]?.string,
+				let Xcoord = json.object?["X"]?.int, Xcoord <= canvas.width,
+				let Ycoord = json.object?["Y"]?.int, Ycoord <= canvas.height,
+				let colorID = json.object?["colorID"]?.int else {
+					//Reply with some error message
+					return
+			}
+			
+			//Verifications here (uuid valid? tiles available? etc)
+			//TODO
+			//Then store this action to DB
+			
+			//Then update canvas
+			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
+			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
+			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Date() //This current time
+			
+			//And finally send this update out to other clients
+			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
+		}
+		
+		//Error handling
+		func sendError(error: Error, socket: WebSocket) {
+			var errorMessage = String()
+			switch error {
+			case BackendError.none: break
+			default:
+				abort()
+			}
+		}
+		
     }
 }
 
