@@ -30,9 +30,9 @@ extension Droplet {
 				user?.socket = ws
 				canvas.connections[user!] = ws
 				//Return generated UUID
-				let structure: [String: NodeRepresentable] = [
-					"responseType": "authSuccessful",
-					"uuid": user?.uuid]
+				var structure = [[String: NodeRepresentable]]()
+				structure.append(["responseType": "authSuccessful",
+				                  "uuid": user?.uuid])
 				
 				guard let json = try? JSON(node: structure) else {
 					return
