@@ -20,12 +20,12 @@ class Canvas {
 	
 	func updateTileToClients(tile: Tile) {
 		//We've received a tile change, it's been approved, send that update to ALL connected clients
-		var structure = [String: NodeRepresentable]()
-		structure["responseType"] = "tileUpdate"
-		structure["X"] = tile.pos.x
-		structure["Y"] = tile.pos.y
-		structure["colorID"] = tile.color
+		var structure = [[String: NodeRepresentable]]()
 		
+		structure.append(["responseType": "tileUpdate",
+		                  "X": tile.pos.x,
+		                  "Y": tile.pos.y,
+		                  "colorID": tile.color])
 		//Create json
 		guard let json = try? JSON(node: structure) else {
 			return
