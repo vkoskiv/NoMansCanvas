@@ -42,7 +42,7 @@ extension Droplet {
 			}
 			
 			func sendColors(json: JSON) {
-				var structure: [[String: NodeRepresentable]] = [[:]]
+				var structure = [[String: NodeRepresentable]]()
 				structure.append(["responseType": "colorList"])
 				for color in canvas.colors {
 					structure.append([
