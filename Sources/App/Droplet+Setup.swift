@@ -31,7 +31,7 @@ extension Droplet {
 				canvas.connections[user!] = ws
 				//Return generated UUID
 				let structure: [String: NodeRepresentable] = [
-					"response": "authSuccessful",
+					"responseType": "authSuccessful",
 					"uuid": user?.uuid]
 				
 				guard let json = try? JSON(node: structure) else {
@@ -41,13 +41,32 @@ extension Droplet {
 				user?.sendJSON(json: json)
 			}
 			
-			func sendCanvas() {
+			func sendColors(json: JSON) {
 				var structure: [[String: NodeRepresentable]] = [[:]]
+				structure.append(["responseType": "colorList"])
+				for color in canvas.colors {
+					structure.append([
+						"R": color.color.red,
+						"G": color.color.green,
+						"B": color.color.blue,
+						"ID": color.ID])
+				}
+				guard let json = try? JSON(node: structure) else {
+					return
+				}
+				user?.sendJSON(json: json)
+			}
+			
+			//TODO: Use a raw base64 binary for this possibly
+			//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
+			func sendCanvas(json: JSON) {
+				var structure: [[String: NodeRepresentable]] = [[:]]
+				structure.append(["responseType": "fullCanvas"])
 				for tile in canvas.tiles {
 					structure.append([
-						"x": tile.pos.x,
-						"y": tile.pos.y,
-						"ID":tile.color.ID])
+						"X": tile.pos.x,
+						"Y": tile.pos.y,
+						"colorID":tile.color])
 				}
 				guard let json = try? JSON(node: structure) else {
 					return
@@ -95,7 +114,7 @@ extension Droplet {
 				
 				//Then update canvas
 				canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
-				canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorForID(colorID: colorID)
+				canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
 				canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Date() //This current time
 				
 				//And finally send this update out to other clients
@@ -111,9 +130,11 @@ extension Droplet {
 						case "initialAuth":
 							initialAuth()
 						case "getCanvas":
-							sendCanvas()
+							sendCanvas(json: json)
 						case "postTile":
 							handleTilePlace(json: json)
+						case "getColors":
+							sendColors(json: json)
 						case "getTileData": break
 						default: break
 					}
@@ -131,3 +152,32 @@ extension Droplet {
 		}
     }
 }
+
+/*
+TODO:
+Add UUID check for sendCanvas
+Add UUID check for sendColors
+Add dimensions to fullCanvas
+*/
+
+/*
+API doc:
+
+First do initialAuth
+Then run getColors
+Then run getCanvas
+
+Request types:
+- "initialAuth", params: none
+- "getCanvas",   params: "userID"
+- "postTile"     params: "userID", "X", "Y", "colorID"
+- "getTileData"  params: "userID", "X", "Y" (Not finished)
+- "getColors"    params: "userID"
+
+Response types ("responseType"):
+- "tileUpdate", params: "X", "Y", "colorID"
+- "authSuccessful", params: "uuid"
+- "fullCanvas", params: Array of "X", "Y", "colorID"
+- "colorList",  params: Array of "R", "G", "B", "ID"
+*/
+
