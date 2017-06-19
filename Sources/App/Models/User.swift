@@ -24,13 +24,13 @@ class User: Hashable {
 	}
 	
 	//New user
-	init(ip: String) {
+	init() {
 		//TODO: Check from DB to make sure this UUID doesn't exist already.
 		self.uuid = User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 50
 		self.lastConnected = Date()
-		self.ip = ip
+		self.ip = ""
 	}
 	
 	//Existing user

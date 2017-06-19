@@ -18,61 +18,11 @@ extension Droplet {
         try setupRoutes()
 		
         //Set up websocket
-		socket("canvas") { Message, WebSocket in
+		socket("canvas") { message, webSocket in
 			
 			print("User connected")
 			
 			var user: User? = nil
-			
-			func initialAuth() {
-				//TODO: Check for IP ban here
-				user = User(ip: Message.peerHostname!)
-				user?.socket = WebSocket
-				canvas.connections[user!] = WebSocket
-				//Return generated UUID
-				var structure = [[String: NodeRepresentable]]()
-				structure.append(["responseType": "authSuccessful",
-				                  "uuid": user?.uuid])
-				
-				guard let json = try? JSON(node: structure) else {
-					return
-				}
-				
-				user?.sendJSON(json: json)
-			}
-			
-			func sendColors(json: JSON) {
-				var structure = [[String: NodeRepresentable]]()
-				structure.append(["responseType": "colorList"])
-				for color in canvas.colors {
-					structure.append([
-						"R": color.color.red,
-						"G": color.color.green,
-						"B": color.color.blue,
-						"ID": color.ID])
-				}
-				guard let json = try? JSON(node: structure) else {
-					return
-				}
-				user?.sendJSON(json: json)
-			}
-			
-			//TODO: Use a raw base64 binary for this possibly
-			//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
-			func sendCanvas(json: JSON) {
-				var structure = [[String: NodeRepresentable]]()
-				structure.append(["responseType": "fullCanvas"])
-				for tile in canvas.tiles {
-					structure.append([
-						"X": tile.pos.x,
-						"Y": tile.pos.y,
-						"colorID":tile.color])
-				}
-				guard let json = try? JSON(node: structure) else {
-					return
-				}
-				user?.sendJSON(json: json)
-			}
 			
 			func userForUUID(uuid: String) -> User {
 				//return canvas.connections.index(forKey: uuid)
@@ -122,19 +72,19 @@ extension Droplet {
 			}
 			
 			//Received JSON request from client
-			WebSocket.onText = { ws, text in
+			webSocket.onText = { ws, text in
 				//TODO: Session tokens if we have time for that
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
 					switch (reqType) {
 						case "initialAuth":
-							initialAuth()
+							user = initialAuth(message: message, socket: webSocket)
 						case "getCanvas":
-							sendCanvas(json: json)
+							sendCanvas(json: json, user: user!)
 						case "postTile":
 							handleTilePlace(json: json)
 						case "getColors":
-							sendColors(json: json)
+							sendColors(json: json, user: user!)
 						case "getTileData": break
 						default: break
 					}
@@ -142,13 +92,68 @@ extension Droplet {
 			}
 			
 			//Connection closed
-			WebSocket.onClose = { ws in
+			webSocket.onClose = { ws in
 				guard let u = user else {
 					return
 				}
 				print("User \(u.uuid) at \(u.ip) disconnected")
 				canvas.connections.removeValue(forKey: u)
 			}
+		}
+		
+		//Authentication
+		func initialAuth(message: Request, socket: WebSocket) -> User {
+			let user = User()
+			user.ip = message.peerHostname!
+			user.socket = socket
+			canvas.connections[user] = socket
+			
+			//Send back generated UUID
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "authSuccessful",
+			                  "uuid": user.uuid])
+			
+			guard let json = try? JSON(node: structure) else {
+				return User()
+			}
+			
+			user.sendJSON(json: json)
+			
+			return user
+		}
+		
+		// Responses
+		func sendColors(json: JSON, user: User) {
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "colorList"])
+			for color in canvas.colors {
+				structure.append([
+					"R": color.color.red,
+					"G": color.color.green,
+					"B": color.color.blue,
+					"ID": color.ID])
+			}
+			guard let json = try? JSON(node: structure) else {
+				return
+			}
+			user.sendJSON(json: json)
+		}
+		
+		//TODO: Use a raw base64 binary for this possibly
+		//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
+		func sendCanvas(json: JSON, user: User) {
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "fullCanvas"])
+			for tile in canvas.tiles {
+				structure.append([
+					"X": tile.pos.x,
+					"Y": tile.pos.y,
+					"colorID":tile.color])
+			}
+			guard let json = try? JSON(node: structure) else {
+				return
+			}
+			user.sendJSON(json: json)
 		}
     }
 }
