@@ -18,7 +18,7 @@ extension Droplet {
         try setupRoutes()
 		
         //Set up websocket
-		socket("canvas") { req, ws in
+		socket("canvas") { Message, WebSocket in
 			
 			print("User connected")
 			
@@ -26,9 +26,9 @@ extension Droplet {
 			
 			func initialAuth() {
 				//TODO: Check for IP ban here
-				user = User(ip: req.peerHostname!)
-				user?.socket = ws
-				canvas.connections[user!] = ws
+				user = User(ip: Message.peerHostname!)
+				user?.socket = WebSocket
+				canvas.connections[user!] = WebSocket
 				//Return generated UUID
 				var structure = [[String: NodeRepresentable]]()
 				structure.append(["responseType": "authSuccessful",
@@ -122,7 +122,7 @@ extension Droplet {
 			}
 			
 			//Received JSON request from client
-			ws.onText = { ws, text in
+			WebSocket.onText = { ws, text in
 				//TODO: Session tokens if we have time for that
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
@@ -142,7 +142,7 @@ extension Droplet {
 			}
 			
 			//Connection closed
-			ws.onClose = { ws in
+			WebSocket.onClose = { ws in
 				guard let u = user else {
 					return
 				}
