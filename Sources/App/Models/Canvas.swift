@@ -56,6 +56,7 @@ class Canvas {
 			for x in 0..<width {
 				let tile = Tile()
 				tile.pos = Coord(x: x, y: y)
+				tile.color = 3
 				self.tiles.append(tile)
 			}
 		}
