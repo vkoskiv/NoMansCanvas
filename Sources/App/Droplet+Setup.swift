@@ -155,8 +155,6 @@ extension Droplet {
 			
 			var structure: [[String: NodeRepresentable]] = canvas.tiles.map { tile in
 				return [
-					"X": tile.pos.x,
-					"Y": tile.pos.y,
 					"colorID": tile.color
 				]
 			}
