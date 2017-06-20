@@ -55,6 +55,7 @@ extension Droplet {
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
+						case "getPlayerStats": break //Existing user, like initialAuth but provide tile and color stats, requires uuid
 						case "getCanvas":
 							try sendCanvas(json: json, user: user!)
 						case "postTile":
@@ -62,6 +63,7 @@ extension Droplet {
 						case "getColors":
 							try sendColors(json: json, user: user!)
 						case "getTileData": break
+						case "getStats": break //Connected users
 						default:
 							throw BackendError.invalidRequestType
 						}
@@ -71,6 +73,7 @@ extension Droplet {
 				}
 			}
 			
+			//TODO: Add close reason?
 			//Connection closed
 			webSocket.onClose = { ws in
 				guard let u = user else {
@@ -155,22 +158,39 @@ extension Droplet {
 			user.sendJSON(json: json)
 		}
 		
+		func userIDValid(id: String) -> Bool {
+			//TODO
+			return true
+		}
+		
 		//User requests
 		func handleTilePlace(json: JSON) throws {
-			//Make sure userID is valid
-			//Make sure color is valid
-			
 			//First get params
-			guard let userID = json.object?["userID"]?.string,
-				let Xcoord = json.object?["X"]?.int, Xcoord <= canvas.width,
-				let Ycoord = json.object?["Y"]?.int, Ycoord <= canvas.height,
-				let colorID = json.object?["colorID"]?.int else {
-					//Reply with some error message
-					return
+			guard let userID = json.object?["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			guard let Xcoord = json.object?["X"]?.int else {
+				throw BackendError.parameterMissingX
+			}
+			guard let Ycoord = json.object?["Y"]?.int else {
+				throw BackendError.parameterMissingY
+			}
+			guard let colorID = json.object?["colorID"]?.int else {
+				throw BackendError.parameterMissingColorID
 			}
 			
 			//Verifications here (uuid valid? tiles available? etc)
-			//TODO
+			//Check that coordinates are valid
+			guard Xcoord <= canvas.width,
+				  Ycoord <= canvas.height else {
+					throw BackendError.invalidCoordinates
+			}
+			
+			//Verify userID is valid
+			guard userIDValid(id: userID) else {
+				throw BackendError.invalidUserID
+			}
+			
 			//Then store this action to DB
 			
 			//Then update canvas
