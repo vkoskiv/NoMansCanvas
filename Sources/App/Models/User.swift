@@ -44,13 +44,11 @@ final class User: Hashable, Model {
 	}
 
 	class func makeColorListFromString(colors: String) -> [Int] {
-		let values = colors.components(separatedBy: ",").flatMap { Int($0.trimmingCharacters(in: .whitespaces)) }
-		return values
+		return colors.components(separatedBy: ",").flatMap { Int($0.trimmingCharacters(in: .whitespaces)) }
 	}
 
 	class func getColorListString(colors: [Int]) -> String {
-		let stringRep = colors.map({"\($0)"}).joined(separator: ",")
-		return stringRep
+		return colors.map({"\($0)"}).joined(separator: ",")
 	}
 
 	var hashValue: Int {
