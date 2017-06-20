@@ -153,14 +153,15 @@ extension Droplet {
 				throw BackendError.invalidUserID
 			}
 			
-			var structure = [[String: NodeRepresentable]]()
-			structure.append(["responseType": "fullCanvas"])
-			for tile in canvas.tiles {
-				structure.append([
+			var structure: [[String: NodeRepresentable]] = canvas.tiles.map { tile in
+				return [
 					"X": tile.pos.x,
 					"Y": tile.pos.y,
-					"colorID":tile.color])
+					"colorID": tile.color
+				]
 			}
+			structure.insert(["responseType": "fullCanvas"], at: 0)
+			
 			guard let json = try? JSON(node: structure) else {
 				return
 			}
