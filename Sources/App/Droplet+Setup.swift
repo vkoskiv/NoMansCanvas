@@ -14,6 +14,7 @@ getUserStats (client has UUID, is returning, parameters: UUID) returns player st
 
 enum BackendError: Error {
 	case invalidUserID
+	case invalidRequestType
 	case noUserID
 	case userIPBanned
 	case parameterMissingX
@@ -38,6 +39,7 @@ extension Droplet {
 			
 			//Received JSON request from client
 			webSocket.onText = { ws, text in
+				print("Received request: " + text)
 				//TODO: Session tokens if we have time for that
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
@@ -52,10 +54,11 @@ extension Droplet {
 						case "getColors":
 							try sendColors(json: json, user: user!)
 						case "getTileData": break
-						default: break
+						default:
+							throw BackendError.invalidRequestType
 						}
 					} catch {
-						sendError(error: error, socket: webSocket)
+						sendError(error: error as! BackendError, socket: webSocket)
 					}
 				}
 			}
@@ -171,18 +174,6 @@ extension Droplet {
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
 		}
 		
-		/*
-		case invalidUserID
-		case noUserID
-		case userIPBanned
-		case parameterMissingX
-		case parameterMissingY
-		case invalidCoordinates
-		case invalidColorID
-		case parameterMissingColorID
-		case none
-		*/
-		
 		//Error handling
 		func sendError(error: BackendError, socket: WebSocket) {
 			var errorMessage = String()
@@ -205,7 +196,8 @@ extension Droplet {
 				errorMessage = "Invalid color ID provided"
 			case .parameterMissingColorID:
 				errorMessage = "Missing color ID parameter"
-			default: break
+			case .invalidRequestType:
+				errorMessage = "Invalid requestType provided"
 			}
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "error",
