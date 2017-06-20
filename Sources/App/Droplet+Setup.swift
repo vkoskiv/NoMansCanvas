@@ -37,6 +37,14 @@ extension Droplet {
 			
 			var user: User? = nil
 			
+			background {
+				while webSocket.state == .open {
+					print("Pinging client")
+					try? webSocket.ping()
+					self.console.wait(seconds: 25)
+				}
+			}
+			
 			//Received JSON request from client
 			webSocket.onText = { ws, text in
 				print("Received request: " + text)
