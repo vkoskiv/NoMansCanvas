@@ -62,7 +62,8 @@ extension Droplet {
 							try handleTilePlace(json: json)
 						case "getColors":
 							try sendColors(json: json, user: user!)
-						case "getTileData": break
+						case "getTileData":
+							try sendTileData(json: json, user: user!)
 						case "getStats": break //Connected users
 						default:
 							throw BackendError.invalidRequestType
@@ -144,6 +145,14 @@ extension Droplet {
 		//TODO: Use a raw base64 binary for this possibly
 		//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
 		func sendCanvas(json: JSON, user: User) throws {
+			guard let userID = json.object?["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			
+			guard userIDValid(id: userID) else {
+				throw BackendError.invalidUserID
+			}
+			
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "fullCanvas"])
 			for tile in canvas.tiles {
@@ -161,6 +170,32 @@ extension Droplet {
 		func userIDValid(id: String) -> Bool {
 			//TODO
 			return true
+		}
+		
+		//- "getTileData"  params: "userID", "X", "Y" (Not finished)
+		func sendTileData(json: JSON, user: User) throws {
+			//Get params
+			guard let userID = json.object?["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			guard let Xcoord = json.object?["X"]?.int else {
+				throw BackendError.parameterMissingX
+			}
+			guard let Ycoord = json.object?["Y"]?.int else {
+				throw BackendError.parameterMissingY
+			}
+			//Verify coords
+			guard Xcoord <= canvas.width,
+				Ycoord <= canvas.height else {
+					throw BackendError.invalidCoordinates
+			}
+			//Verify userID
+			guard userIDValid(id: userID) else {
+				throw BackendError.invalidUserID
+			}
+			//Get tile data and return it
+			
+			//TODO
 		}
 		
 		//User requests
