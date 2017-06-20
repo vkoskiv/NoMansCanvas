@@ -55,6 +55,8 @@ extension Droplet {
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
+						case "auth":
+							break //TODO: Add auth handling (load user from DB with uuid)
 						case "getPlayerStats": break //Existing user, like initialAuth but provide tile and color stats, requires uuid
 						case "getCanvas":
 							try sendCanvas(json: json, user: user!)
@@ -127,6 +129,7 @@ extension Droplet {
 		
 		// Responses
 		func sendColors(json: JSON, user: User) throws {
+			//TODO: Add uuid requirement
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "colorList"])
 			for color in canvas.colors {
@@ -143,7 +146,6 @@ extension Droplet {
 		}
 		
 		//TODO: Use a raw base64 binary for this possibly
-		//TODO: Require userID for this to prevent unauthed users (IP banned) from spamming getCanvas
 		func sendCanvas(json: JSON, user: User) throws {
 			guard let userID = json.object?["userID"]?.string else {
 				throw BackendError.noUserID
@@ -163,11 +165,12 @@ extension Droplet {
 			guard let json = try? JSON(node: structure) else {
 				return
 			}
+			print("JSON bytes: \(try json.serialize().count)")
 			user.sendJSON(json: json)
 		}
 		
 		func userIDValid(id: String) -> Bool {
-			//TODO
+			//TODO: Finish userIDValid()
 			return true
 		}
 		
@@ -195,7 +198,7 @@ extension Droplet {
 			}
 			//Get tile data and return it
 			
-			//TODO
+			//TODO: Finish sendTileData()
 		}
 		
 		//User requests
@@ -227,12 +230,14 @@ extension Droplet {
 				throw BackendError.invalidUserID
 			}
 			
-			//Then store this action to DB
+			//Then store this action to DB separate table
+			
+			//TODO: UPDATE canvas DB state for this pixel
 			
 			//Then update canvas
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
-			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Date() //This current time
+			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
 			
 			//And finally send this update out to other clients
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
