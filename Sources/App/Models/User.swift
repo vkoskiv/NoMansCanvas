@@ -44,6 +44,7 @@ class User: Hashable {
 	}
 	
 	func sendJSON(json: JSON) {
+		//TODO: Change serialize() to makeBytes() to save bandwidth
 		try? self.socket.send(json.serialize().makeString())
 	}
 	

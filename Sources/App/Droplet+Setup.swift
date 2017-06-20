@@ -185,6 +185,7 @@ extension Droplet {
 				throw BackendError.parameterMissingY
 			}
 			//Verify coords
+			//FIXME: Negative coords crash here
 			guard Xcoord <= canvas.width,
 				Ycoord <= canvas.height else {
 					throw BackendError.invalidCoordinates
@@ -216,6 +217,7 @@ extension Droplet {
 			
 			//Verifications here (uuid valid? tiles available? etc)
 			//Check that coordinates are valid
+			//FIXME: Negative values crash here
 			guard Xcoord <= canvas.width,
 				  Ycoord <= canvas.height else {
 					throw BackendError.invalidCoordinates
