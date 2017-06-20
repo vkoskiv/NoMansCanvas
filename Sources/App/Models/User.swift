@@ -15,13 +15,13 @@ final class User: Hashable, Model {
 	var uuid: String			//uuid is mandatory
 	var ip: String
 	var socket: WebSocket? = nil
-	
+
 	let storage = Storage()
-	
+
 	var availableColors: [Int] //ColorID array
 	var remainingTiles: Int
 	var lastConnected: String //Used to keep track of accumulated tiles while disconnected
-	
+
 	required init(row: Row) throws {
 		self.username = try row.get("username")
 		self.uuid = try row.get("uuid")
@@ -30,7 +30,7 @@ final class User: Hashable, Model {
 		self.lastConnected = try row.get("lastConnected")
 		self.availableColors = User.makeColorListFromString(colors: try row.get("availableColors"))
 	}
-	
+
 	//DB requirements
 	func makeRow() throws -> Row {
 		var row = Row()
@@ -42,21 +42,21 @@ final class User: Hashable, Model {
 		try row.set("availableColors", User.getColorListString(colors: availableColors))
 		return row
 	}
-	
+
 	class func makeColorListFromString(colors: String) -> [Int] {
-		//TODO: Make this
-		return []
+		let values = colors.components(separatedBy: ",").flatMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+		return values
 	}
-	
+
 	class func getColorListString(colors: [Int]) -> String {
-		//TODO: Make this
-		return ""
+		let stringRep = colors.map({"\($0)"}).joined(separator: ",")
+		return stringRep
 	}
-	
+
 	var hashValue: Int {
 		return self.uuid.hashValue
 	}
-	
+
 	//New user
 	init() {
 		//TODO: Check from DB to make sure this UUID doesn't exist already.
@@ -66,7 +66,7 @@ final class User: Hashable, Model {
 		self.lastConnected = String()
 		self.ip = ""
 	}
-	
+
 	//Existing user
 	init(uuid: String) {
 		//Get other params from DB
@@ -76,12 +76,12 @@ final class User: Hashable, Model {
 		self.lastConnected = String() //Unused for now
 		self.ip = ""
 	}
-	
+
 	func sendJSON(json: JSON) {
 		//TODO: Change serialize() to makeBytes() to save bandwidth
 		try? self.socket?.send(json.serialize().makeString())
 	}
-	
+
 	class func randomUUID(length: Int) -> String {
 		let charset: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 		var randString: String = ""
@@ -122,7 +122,7 @@ extension User: Preparation {
 			users.string("availableColors")
 		}
 	}
-	
+
 	static func revert(_ database: Database) throws {
 		try database.delete(self)
 	}
