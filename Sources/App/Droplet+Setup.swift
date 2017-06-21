@@ -59,7 +59,7 @@ extension Droplet {
 					let json = try? JSON(node: structure)
 					
 					try? webSocket.send((json?.serialize().makeString())!)
-					self.console.wait(seconds: Double(regenSeconds))
+					self.console.wait(seconds: Double(10))
 				}
 			}
 			
