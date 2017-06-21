@@ -47,16 +47,16 @@ class Canvas {
 		connections = [:]
 		//Add some default colors: red, green, blue, black
 		colors = [
-			TileColor(color: Color(with: 255, green: 0, blue: 0),		id: 0),//Red
-			TileColor(color: Color(with: 0, green: 255, blue: 0),		id: 1),//Green
-			TileColor(color: Color(with: 0, green: 0, blue: 255),		id: 2),//Blue
-			TileColor(color: Color(with: 255, green: 255, blue: 255),	id: 3),//White
-			TileColor(color: Color(with: 0, green: 0, blue: 0),			id: 4),//Black
-TileColor(color: Color(with: 0, green: 153, blue: 255), id: 5),
-TileColor(color: Color(with: 51, green: 204, blue: 51), id: 6),
-TileColor(color: Color(with: 255, green: 153, blue: 51), id: 7),
-TileColor(color: Color(with: 255, green: 0, blue: 255), id: 8),
-TileColor(color: Color(with: 255, green: 255, blue: 0), id:9)]//Light blue
+			TileColor(color: Color(with: 255,	green: 0,	blue: 0),		id: 0),//Red
+			TileColor(color: Color(with: 0,		green: 255, blue: 0),		id: 1),//Green
+			TileColor(color: Color(with: 0,		green: 0,	blue: 255),		id: 2),//Blue
+			TileColor(color: Color(with: 255,	green: 255, blue: 255),		id: 3),//White
+			TileColor(color: Color(with: 0,		green: 0,	blue: 0),		id: 4),//Black
+			TileColor(color: Color(with: 0,		green: 153, blue: 255),		id: 5),//Light blue
+			TileColor(color: Color(with: 51,	green: 204, blue: 51),		id: 6),
+			TileColor(color: Color(with: 255,	green: 153, blue: 51),		id: 7),
+			TileColor(color: Color(with: 255,	green: 0,	blue: 255),		id: 8),
+			TileColor(color: Color(with: 255,	green: 255, blue: 0),		id:9)]
 		//init the tiles
 		
 		var initTileDB: Bool = false
