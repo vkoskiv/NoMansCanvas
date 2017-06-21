@@ -14,6 +14,8 @@ getUserStats (client has UUID, is returning, parameters: UUID) returns player st
 
 enum BackendError: Error {
 	case invalidUserID
+	case userNotFound
+	case notAuthenticated
 	case invalidRequestType
 	case noUserID
 	case userIPBanned
@@ -45,23 +47,39 @@ extension Droplet {
 				}
 			}
 			
+			/*background {
+				while webSocket.state == .open {
+					print("Sending tile++")
+					try? webSocket.ping()
+					self.console.wait(seconds: 60)
+				}
+			}*/
+			
 			//Received JSON request from client
 			webSocket.onText = { ws, text in
 				print("Received request: " + text)
 				//TODO: Session tokens if we have time for that
 				let json = try JSON(bytes: Array(text.utf8))
 				if let reqType = json.object?["requestType"]?.string {
+					
 					do {
+						
+						//Handle strange case where UUID provided isn't found, and user = nil
+						if !(user != nil) && (reqType != "initialAuth" && reqType != "auth") {
+							throw BackendError.notAuthenticated
+						}
+						
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
 						case "auth":
-							break //TODO: Add auth handling (load user from DB with uuid)
-						case "getPlayerStats": break //Existing user, like initialAuth but provide tile and color stats, requires uuid
+							user = try reAuth(json: json, message: message, socket: webSocket)
 						case "getCanvas":
 							try sendCanvas(json: json, user: user!)
 						case "postTile":
 							try handleTilePlace(json: json)
+						case "postColor":
+							try handleAddColor(json: json)
 						case "getColors":
 							try sendColors(json: json, user: user!)
 						case "getTileData":
@@ -71,7 +89,7 @@ extension Droplet {
 							throw BackendError.invalidRequestType
 						}
 					} catch {
-						sendError(error: error as! BackendError, socket: webSocket)
+						sendError(error: error, socket: webSocket)
 					}
 				}
 			}
@@ -82,6 +100,8 @@ extension Droplet {
 				guard let u = user else {
 					return
 				}
+				//TODO: Update lastConnected and save to DB
+				
 				print("User \(u.uuid) at \(u.ip) disconnected")
 				canvas.connections.removeValue(forKey: u)
 			}
@@ -92,6 +112,7 @@ extension Droplet {
 			let user = User()
 			user.ip = message.peerHostname!
 			user.socket = socket
+			user.username = "Anonymous"
 			canvas.connections[user] = socket
 			
 			//Send back generated UUID
@@ -103,18 +124,52 @@ extension Droplet {
 			
 			user.sendJSON(json: json)
 			
+			//Save user to DB
+			try user.save()
+			
+			//And return for state
+			return user
+		}
+		
+		func reAuth(json: JSON, message: Request, socket: WebSocket) throws -> User {
+			
+			guard let userID = json.object?["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			
+			guard let user = try User.makeQuery().filter("uuid", userID).first() else {
+				throw BackendError.userNotFound
+			}
+			
+			//Now set the newest WebSocket
+			user.ip = message.peerHostname!
+			user.socket = socket
+			canvas.connections[user] = socket
+			
+			//TODO: provide tile and color stats
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "reAuthSuccessful"])
+			
+			let json = try JSON(node: structure)
+			
+			user.sendJSON(json: json)
+			
+			//Now save this new user data to DB
+			
+			try user.save()
+			
+			//And return it for the state
 			return user
 		}
 		
 		func userForUUID(uuid: String) -> User {
-			//return canvas.connections.index(forKey: uuid)
-			/*var user: User!
+			var user: User!
 			canvas.connections.forEach { dict in
-			if dict.key.uuid == uuid {
-			user = dict.key
+				if dict.key.uuid == uuid {
+					user = dict.key
+				}
 			}
-			}*/
-			return User(uuid: "1")
+			return user
 		}
 		
 		func colorForID(colorID: Int) -> TileColor {
@@ -129,7 +184,15 @@ extension Droplet {
 		
 		// Responses
 		func sendColors(json: JSON, user: User) throws {
-			//TODO: Add uuid requirement
+			
+			guard let userID = json.object?["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			
+			guard try userIDValid(id: userID) else {
+				throw BackendError.invalidUserID
+			}
+			
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "colorList"])
 			for color in canvas.colors {
@@ -151,7 +214,7 @@ extension Droplet {
 				throw BackendError.noUserID
 			}
 			
-			guard userIDValid(id: userID) else {
+			guard try userIDValid(id: userID) else {
 				throw BackendError.invalidUserID
 			}
 			
@@ -169,8 +232,10 @@ extension Droplet {
 			user.sendJSON(json: json)
 		}
 		
-		func userIDValid(id: String) -> Bool {
-			//TODO: Finish userIDValid()
+		func userIDValid(id: String) throws -> Bool {
+			guard (try User.makeQuery().filter("uuid", id).first()) != nil else {
+				return false
+			}
 			return true
 		}
 		
@@ -193,7 +258,7 @@ extension Droplet {
 					throw BackendError.invalidCoordinates
 			}
 			//Verify userID
-			guard userIDValid(id: userID) else {
+			guard try userIDValid(id: userID) else {
 				throw BackendError.invalidUserID
 			}
 			//Get tile data and return it
@@ -201,6 +266,7 @@ extension Droplet {
 			//TODO: Finish sendTileData()
 		}
 		
+		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
 		//User requests
 		func handleTilePlace(json: JSON) throws {
 			//First get params
@@ -226,7 +292,7 @@ extension Droplet {
 			}
 			
 			//Verify userID is valid
-			guard userIDValid(id: userID) else {
+			guard try userIDValid(id: userID) else {
 				throw BackendError.invalidUserID
 			}
 			
@@ -243,30 +309,46 @@ extension Droplet {
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
 		}
 		
+		/*TODO:
+			Canvas DB integration
+			color add handling
+			tilesRemaining handling
+			
+		*/
+		func handleAddColor(json: JSON) throws {
+			//TODO: Create handleAddColor()
+		}
+		
 		//Error handling
-		func sendError(error: BackendError, socket: WebSocket) {
+		func sendError(error: Error, socket: WebSocket) {
 			var errorMessage = String()
 			switch error {
-			case .none:
+			case BackendError.none:
 				errorMessage = "No error!"
-			case .invalidUserID:
+			case BackendError.invalidUserID:
 				errorMessage = "Invalid user ID provided"
-			case .noUserID:
+			case BackendError.noUserID:
 				errorMessage = "No user ID provided (get it with initialAuth)"
-			case .userIPBanned:
+			case BackendError.userIPBanned:
 				errorMessage = "Server authentication error"
-			case .parameterMissingX:
+			case BackendError.parameterMissingX:
 				errorMessage = "Missing X coordinate"
-			case .parameterMissingY:
+			case BackendError.parameterMissingY:
 				errorMessage = "Missing Y coordinate"
-			case .invalidCoordinates:
+			case BackendError.invalidCoordinates:
 				errorMessage = "Invalid coordinates provided"
-			case .invalidColorID:
+			case BackendError.invalidColorID:
 				errorMessage = "Invalid color ID provided"
-			case .parameterMissingColorID:
+			case BackendError.parameterMissingColorID:
 				errorMessage = "Missing color ID parameter"
-			case .invalidRequestType:
+			case BackendError.invalidRequestType:
 				errorMessage = "Invalid requestType provided"
+			case BackendError.userNotFound:
+				errorMessage = "User not found! Get a new UUID with initialAuth"
+			case BackendError.notAuthenticated:
+				errorMessage = "Not authenticated yet."
+			default:
+				print(error)
 			}
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "error",
@@ -281,14 +363,7 @@ extension Droplet {
 }
 
 /*
-TODO:
-Add UUID check for sendCanvas
-Add UUID check for sendColors
-Add dimensions to fullCanvas
-*/
-
-/*
-API doc:
+API µDoc:
 
 First do initialAuth
 Then run getColors
@@ -296,6 +371,7 @@ Then run getCanvas
 
 Request types:
 - "initialAuth", params: none
+- "auth",        params: "userID"
 - "getCanvas",   params: "userID"
 - "postTile"     params: "userID", "X", "Y", "colorID"
 - "getTileData"  params: "userID", "X", "Y" (Not finished)
@@ -304,6 +380,7 @@ Request types:
 Response types ("responseType"):
 - "tileUpdate", params: "X", "Y", "colorID"
 - "authSuccessful", params: "uuid"
+- "reAuthSuccessful", params: TO BE ADDED
 - "fullCanvas", params: Array of "X", "Y", "colorID"
 - "colorList",  params: Array of "R", "G", "B", "ID"
 - "error"		params: "errorMessage", Error message in human-readable form

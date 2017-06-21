@@ -38,7 +38,7 @@ final class Tile: Model {
 		pos = Coord(x: 0, y: 0)
 		color = 3
 		placeTime = String()
-		placer = User(uuid: "")
+		placer = User()
 	}
 	
 	//From DB
