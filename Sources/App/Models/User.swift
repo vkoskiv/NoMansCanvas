@@ -20,13 +20,17 @@ final class User: Hashable, Model {
 
 	var availableColors: [Int] //ColorID array
 	var remainingTiles: Int
-	var lastConnected: String //Used to keep track of accumulated tiles while disconnected
+	var tileRegenSeconds: Int
+	var totalTilesPlaced: Int
+	var lastConnected: Int64 //Used to keep track of accumulated tiles while disconnected, unix epoch
 
 	required init(row: Row) throws {
 		self.username = try row.get("username")
 		self.uuid = try row.get("uuid")
 		self.ip = try row.get("latestIP")
 		self.remainingTiles = try row.get("remainingTiles")
+		self.tileRegenSeconds = try row.get("tileRegenSeconds")
+		self.totalTilesPlaced = try row.get("totalTilesPlaced")
 		self.lastConnected = try row.get("lastConnected")
 		self.availableColors = User.makeColorListFromString(colors: try row.get("availableColors"))
 	}
@@ -38,6 +42,8 @@ final class User: Hashable, Model {
 		try row.set("uuid", uuid)
 		try row.set("latestIP", ip)
 		try row.set("remainingTiles", remainingTiles)
+		try row.set("tileRegenSeconds", tileRegenSeconds)
+		try row.set("totalTilesPlaced", totalTilesPlaced)
 		try row.set("lastConnected", lastConnected)
 		try row.set("availableColors", User.getColorListString(colors: availableColors))
 		return row
@@ -60,18 +66,10 @@ final class User: Hashable, Model {
 		//TODO: Check from DB to make sure this UUID doesn't exist already.
 		self.uuid = User.randomUUID(length: 20)
 		self.availableColors = []
-		self.remainingTiles = 50
-		self.lastConnected = String()
-		self.ip = ""
-	}
-
-	//Existing user
-	init(uuid: String) {
-		//Get other params from DB
-		self.uuid = uuid
-		self.availableColors = []
-		self.remainingTiles = 0
-		self.lastConnected = String() //Unused for now
+		self.remainingTiles = 60
+		self.tileRegenSeconds = 60
+		self.totalTilesPlaced = 0
+		self.lastConnected = 0
 		self.ip = ""
 	}
 
@@ -98,15 +96,6 @@ func ==(lhs: User, rhs: User) -> Bool {
 	return lhs.uuid.hashValue == rhs.uuid.hashValue
 }
 
-/*
-try row.set("username", username)
-try row.set("uuid", uuid)
-try row.set("latestIP", ip)
-try row.set("remainingTiles", remainingTiles)
-try row.set("lastConnected", lastConnected)
-try row.set("availableColors", getColorListString(colors: availableColors))
-*/
-
 //Database preparation
 extension User: Preparation {
 	static func prepare(_ database: Database) throws {
@@ -116,7 +105,9 @@ extension User: Preparation {
 			users.string("uuid")
 			users.string("latestIP")
 			users.int("remainingTiles")
-			users.string("lastConnected")
+			users.int("tileRegenSeconds")
+			users.int("totalTilesPlaced")
+			users.bigInteger("lastConnected")
 			users.string("availableColors")
 		}
 	}
