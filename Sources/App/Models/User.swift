@@ -17,6 +17,7 @@ final class User: Hashable, Model {
 	var socket: WebSocket? = nil
 
 	let storage = Storage()
+	let maxTiles = 60 //Constant for now
 
 	var availableColors: [Int] //ColorID array
 	var remainingTiles: Int

@@ -24,6 +24,7 @@ enum BackendError: Error {
 	case invalidCoordinates
 	case invalidColorID
 	case parameterMissingColorID
+	case noTilesRemaining
 	case none
 }
 
@@ -38,6 +39,7 @@ extension Droplet {
 			print("User connected")
 			
 			var user: User? = nil
+			var regenSeconds = 60
 			
 			background {
 				while webSocket.state == .open {
@@ -47,13 +49,19 @@ extension Droplet {
 				}
 			}
 			
-			/*background {
+			background {
 				while webSocket.state == .open {
 					print("Sending tile++")
-					try? webSocket.ping()
-					self.console.wait(seconds: 60)
+					
+					var structure = [[String: NodeRepresentable]]()
+					structure.append(["responseType": "incrementTileCount",
+					                  "amount": 1])
+					let json = try? JSON(node: structure)
+					
+					try? webSocket.send((json?.serialize().makeString())!)
+					self.console.wait(seconds: Double(regenSeconds))
 				}
-			}*/
+			}
 			
 			//Received JSON request from client
 			webSocket.onText = { ws, text in
@@ -72,8 +80,10 @@ extension Droplet {
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
+							regenSeconds = (user?.tileRegenSeconds)!
 						case "auth":
 							user = try reAuth(json: json, message: message, socket: webSocket)
+							regenSeconds = (user?.tileRegenSeconds)!
 						case "getCanvas":
 							try sendCanvas(json: json, user: user!)
 						case "postTile":
@@ -100,7 +110,10 @@ extension Droplet {
 				guard let u = user else {
 					return
 				}
-				//TODO: Update lastConnected and save to DB
+				//Update lastConnected and save to DB
+				u.lastConnected = Int64(Date().timeIntervalSince1970)
+				//u.remainingTiles = (user?.remainingTiles)!
+				try u.save()
 				
 				print("User \(u.uuid) at \(u.ip) disconnected")
 				canvas.connections.removeValue(forKey: u)
@@ -118,7 +131,8 @@ extension Droplet {
 			//Send back generated UUID
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "authSuccessful",
-			                  "uuid": user.uuid])
+			                  "uuid": user.uuid,
+			                  "remainingTiles": user.remainingTiles])
 			
 			let json = try JSON(node: structure)
 			
@@ -146,9 +160,15 @@ extension Droplet {
 			user.socket = socket
 			canvas.connections[user] = socket
 			
+			//Update user tileCount based on diff of last login and now
+			let diffSeconds = Int64(Date().timeIntervalSince1970) - user.lastConnected
+			let tilesToAdd = diffSeconds / Int64(user.tileRegenSeconds)
+			user.remainingTiles += Int(tilesToAdd >= Int64(user.maxTiles) ? Int64(user.maxTiles - user.remainingTiles) : tilesToAdd)
+			
 			//TODO: provide tile and color stats
 			var structure = [[String: NodeRepresentable]]()
-			structure.append(["responseType": "reAuthSuccessful"])
+			structure.append(["responseType": "reAuthSuccessful",
+			                  "remainingTiles": user.remainingTiles])
 			
 			let json = try JSON(node: structure)
 			
@@ -283,6 +303,10 @@ extension Droplet {
 				throw BackendError.parameterMissingColorID
 			}
 			
+			guard userForUUID(uuid: userID).remainingTiles > 0 else {
+				throw BackendError.noTilesRemaining
+			}
+			
 			//Verifications here (uuid valid? tiles available? etc)
 			//Check that coordinates are valid
 			//FIXME: Negative values crash here
@@ -347,9 +371,12 @@ extension Droplet {
 				errorMessage = "User not found! Get a new UUID with initialAuth"
 			case BackendError.notAuthenticated:
 				errorMessage = "Not authenticated yet."
+			case BackendError.noTilesRemaining:
+				errorMessage = "No tiles remaining!"
 			default:
 				print(error)
 			}
+			print(errorMessage)
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "error",
 			                  "errorMessage": errorMessage])
