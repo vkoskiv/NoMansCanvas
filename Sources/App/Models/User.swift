@@ -68,14 +68,13 @@ final class User: Hashable, Model {
 		self.uuid = User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 60
-		self.tileRegenSeconds = 60
+		self.tileRegenSeconds = 30
 		self.totalTilesPlaced = 0
 		self.lastConnected = 0
 		self.ip = ""
 	}
 
 	func sendJSON(json: JSON) {
-		//TODO: Change serialize() to makeBytes() to save bandwidth
 		try? self.socket?.send(json.serialize().makeString())
 	}
 

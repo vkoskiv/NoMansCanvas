@@ -7,6 +7,7 @@
 //
 
 import Vapor
+import MySQLProvider
 
 class Canvas {
 	//Connection is a key-val pair; User:WebSocket
@@ -52,12 +53,29 @@ class Canvas {
 			TileColor(color: Color(with: 255, green: 255, blue: 255),	id: 3),//White
 			TileColor(color: Color(with: 0, green: 0, blue: 0),			id: 4)]//Black
 		//init the tiles
-		for y in 0..<height {
-			for x in 0..<width {
-				let tile = Tile()
-				tile.pos = Coord(x: x, y: y)
-				tile.color = 3
-				self.tiles.append(tile)
+		
+		var initTileDB: Bool = false
+		let dbTiles = try? Tile.makeQuery().all()
+		if dbTiles?.count == 0 {
+			initTileDB = true
+		}
+		
+		if initTileDB {
+			print("Running first tile db init!")
+			for y in 0..<height {
+				for x in 0..<width {
+					let tile = Tile()
+					tile.pos = Coord(x: x, y: y)
+					tile.color = 3
+					//Only run once, check the row count
+					try? tile.save()
+					self.tiles.append(tile)
+				}
+			}
+		} else {
+			print("Loading canvas from DB...")
+			dbTiles?.forEach { dbTile in
+				self.tiles.append(dbTile)
 			}
 		}
 	}

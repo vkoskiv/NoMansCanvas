@@ -321,13 +321,14 @@ extension Droplet {
 			}
 			
 			//Then store this action to DB separate table
-			
-			//TODO: UPDATE canvas DB state for this pixel
+			//TODO: action table
 			
 			//Then update canvas
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
+			
+			try canvas.tiles[Xcoord + Ycoord * canvas.width].save()
 			
 			//And finally send this update out to other clients
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
