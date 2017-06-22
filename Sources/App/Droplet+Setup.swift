@@ -51,7 +51,7 @@ extension Droplet {
 			
 			background {
 				while webSocket.state == .open {
-					if user.isAuthed {
+					if user.isAuthed && (user.remainingTiles < user.maxTiles) {
 						print("Sending tile++")
 						
 						var structure = [[String: NodeRepresentable]]()
@@ -175,6 +175,11 @@ extension Droplet {
 			user.isAuthed = true
 			canvas.connections[user] = socket
 			
+			//Check for excess tiles (shouldn't need this)
+			if user.remainingTiles > user.maxTiles {
+				user.remainingTiles = user.maxTiles
+			}
+			
 			//Update user tileCount based on diff of last login and now
 			let diffSeconds = Int64(Date().timeIntervalSince1970) - user.lastConnected
 			let tilesToAdd = diffSeconds / Int64(user.tileRegenSeconds)
@@ -266,7 +271,7 @@ extension Droplet {
 			guard let json = try? JSON(node: structure) else {
 				return
 			}
-			print("JSON bytes: \(try json.serialize().count)")
+			print("Sending Canvas: \((try json.serialize().count)/1024)KB")
 			user.sendJSON(json: json)
 		}
 		
