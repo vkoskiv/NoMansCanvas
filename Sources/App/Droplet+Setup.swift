@@ -61,7 +61,7 @@ extension Droplet {
 						
 						try? webSocket.send((json?.serialize().makeString())!)
 					}
-					self.console.wait(seconds: Double(10))
+					self.console.wait(seconds: Double(user.tileRegenSeconds))
 				}
 			}
 			
