@@ -50,7 +50,6 @@ extension Droplet {
 			background {
 				while webSocket.state == .open {
 					if user.isAuthed && (user.remainingTiles < user.maxTiles) {
-						print("Sending tile++ to \(user.uuid)")
 						var structure = [[String: NodeRepresentable]]()
 						structure.append(["responseType": "incrementTileCount",
 						                  "amount": 1])
