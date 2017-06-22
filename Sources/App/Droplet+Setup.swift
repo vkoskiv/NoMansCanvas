@@ -353,7 +353,7 @@ extension Droplet {
 			//TODO: action table
 			
 			//Then update canvas
-			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = userForUUID(uuid: userID)
+			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = user
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
 			
