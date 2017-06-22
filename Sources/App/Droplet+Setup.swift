@@ -39,7 +39,6 @@ extension Droplet {
 			print("User connected")
 			
 			var user: User = User()
-			var regenSeconds = 60
 			
 			background {
 				while webSocket.state == .open {
@@ -82,10 +81,8 @@ extension Droplet {
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
-							regenSeconds = user.tileRegenSeconds
 						case "auth":
 							user = try reAuth(json: json, message: message, socket: webSocket)
-							regenSeconds = user.tileRegenSeconds
 						case "getCanvas":
 							try sendCanvas(json: json, user: user)
 						case "postTile":

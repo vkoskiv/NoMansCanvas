@@ -69,7 +69,7 @@ final class User: Hashable, Model {
 		self.uuid = ""//User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 0
-		self.tileRegenSeconds = 10
+		self.tileRegenSeconds = 100
 		self.totalTilesPlaced = 0
 		self.lastConnected = 0
 		self.ip = ""
