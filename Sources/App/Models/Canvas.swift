@@ -45,18 +45,25 @@ class Canvas {
 	//Init canvas, load it from the DB here
 	init() {
 		connections = [:]
-		//Add some default colors: red, green, blue, black
+		//Add some default colors. Remember to preserve IDs, as existing drawings use em for now
 		colors = [
-			TileColor(color: Color(with: 255,	green: 0,	blue: 0),		id: 0),//Red
-			TileColor(color: Color(with: 0,		green: 255, blue: 0),		id: 1),//Green
-			TileColor(color: Color(with: 0,		green: 0,	blue: 255),		id: 2),//Blue
 			TileColor(color: Color(with: 255,	green: 255, blue: 255),		id: 3),//White
+			TileColor(color: Color(with: 221,	green: 221, blue: 221),		id: 10),//Dark white
+			TileColor(color: Color(with: 117,	green: 117, blue: 117),		id: 11),//Grey
 			TileColor(color: Color(with: 0,		green: 0,	blue: 0),		id: 4),//Black
-			TileColor(color: Color(with: 0,		green: 153, blue: 255),		id: 5),//Light blue
-			TileColor(color: Color(with: 51,	green: 204, blue: 51),		id: 6),
-			TileColor(color: Color(with: 255,	green: 153, blue: 51),		id: 7),
-			TileColor(color: Color(with: 255,	green: 0,	blue: 255),		id: 8),
-			TileColor(color: Color(with: 255,	green: 255, blue: 0),		id:9)]
+			TileColor(color: Color(with: 219,	green: 0,	blue: 5	),		id: 0),//Red
+			TileColor(color: Color(with: 252,	green: 145,	blue: 199),		id: 8),//Pink
+			TileColor(color: Color(with: 142,	green: 87,	blue: 51),		id: 12),//Brown
+			TileColor(color: Color(with: 255,	green: 153, blue: 51),		id: 7),//Orange
+			TileColor(color: Color(with: 255,	green: 255, blue: 0),		id: 9),//Yellow
+			TileColor(color: Color(with: 133,	green: 222, blue: 53),		id: 1),//Green
+			TileColor(color: Color(with: 24,	green: 181, blue: 4),		id: 6),//Dark green
+			TileColor(color: Color(with: 0,		green: 0,	blue: 255),		id: 2),//Blue
+			TileColor(color: Color(with: 13,	green: 109,	blue: 187),		id: 13),//almostLight blue
+			TileColor(color: Color(with: 26,	green: 203, blue: 213),		id: 5),//Light blue
+			TileColor(color: Color(with: 195,	green: 80,	blue: 222),		id: 14),//light purple
+			TileColor(color: Color(with: 110,	green: 0,	blue: 108),		id: 15)//purple
+		]
 		//init the tiles
 		
 		var initTileDB: Bool = false
