@@ -43,7 +43,6 @@ extension Droplet {
 			
 			background {
 				while webSocket.state == .open {
-					print("Pinging client")
 					try? webSocket.ping()
 					self.console.wait(seconds: 25)
 				}
@@ -52,8 +51,6 @@ extension Droplet {
 			background {
 				while webSocket.state == .open {
 					if user.isAuthed && (user.remainingTiles < user.maxTiles) {
-						print("Sending tile++")
-						
 						var structure = [[String: NodeRepresentable]]()
 						structure.append(["responseType": "incrementTileCount",
 						                  "amount": 1])
