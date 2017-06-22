@@ -38,7 +38,7 @@ extension Droplet {
 			
 			print("User connected")
 			
-			var user: User? = nil
+			var user: User = User()
 			var regenSeconds = 60
 			
 			background {
@@ -51,14 +51,19 @@ extension Droplet {
 			
 			background {
 				while webSocket.state == .open {
-					print("Sending tile++")
-					
-					var structure = [[String: NodeRepresentable]]()
-					structure.append(["responseType": "incrementTileCount",
-					                  "amount": 1])
-					let json = try? JSON(node: structure)
-					
-					try? webSocket.send((json?.serialize().makeString())!)
+					if user.isAuthed {
+						print("Sending tile++")
+						
+						var structure = [[String: NodeRepresentable]]()
+						structure.append(["responseType": "incrementTileCount",
+						                  "amount": 1])
+						let json = try? JSON(node: structure)
+						
+						user.remainingTiles += 1
+						try? user.save()
+						
+						try? webSocket.send((json?.serialize().makeString())!)
+					}
 					self.console.wait(seconds: Double(10))
 				}
 			}
@@ -73,27 +78,27 @@ extension Droplet {
 					do {
 						
 						//Handle strange case where UUID provided isn't found, and user = nil
-						if !(user != nil) && (reqType != "initialAuth" && reqType != "auth") {
+						if !(user.isAuthed) && (reqType != "initialAuth" && reqType != "auth") {
 							throw BackendError.notAuthenticated
 						}
 						
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
-							regenSeconds = (user?.tileRegenSeconds)!
+							regenSeconds = user.tileRegenSeconds
 						case "auth":
 							user = try reAuth(json: json, message: message, socket: webSocket)
-							regenSeconds = (user?.tileRegenSeconds)!
+							regenSeconds = user.tileRegenSeconds
 						case "getCanvas":
-							try sendCanvas(json: json, user: user!)
+							try sendCanvas(json: json, user: user)
 						case "postTile":
-							try handleTilePlace(json: json)
+							try handleTilePlace(json: json, user: user)
 						case "postColor":
 							try handleAddColor(json: json)
 						case "getColors":
-							try sendColors(json: json, user: user!)
+							try sendColors(json: json, user: user)
 						case "getTileData":
-							try sendTileData(json: json, user: user!)
+							try sendTileData(json: json, user: user)
 						case "getStats": break //Connected users
 						default:
 							throw BackendError.invalidRequestType
@@ -107,9 +112,7 @@ extension Droplet {
 			//TODO: Add close reason?
 			//Connection closed
 			webSocket.onClose = { ws in
-				guard let u = user else {
-					return
-				}
+				let u = user
 				//Update lastConnected and save to DB
 				u.lastConnected = Int64(Date().timeIntervalSince1970)
 				//u.remainingTiles = (user?.remainingTiles)!
@@ -123,9 +126,16 @@ extension Droplet {
 		//Authentication
 		func initialAuth(message: Request, socket: WebSocket) throws -> User {
 			let user = User()
-			user.ip = message.peerHostname!
+			user.ip = (message.peerHostname?.string)!
 			user.socket = socket
 			user.username = "Anonymous"
+			user.isAuthed = true
+			
+			user.remainingTiles = 60
+			user.tileRegenSeconds = 10
+			user.totalTilesPlaced = 0
+			
+			user.uuid = User.randomUUID(length: 20)
 			canvas.connections[user] = socket
 			
 			//Send back generated UUID
@@ -155,9 +165,14 @@ extension Droplet {
 				throw BackendError.userNotFound
 			}
 			
+			//guard user.isBanned == false else {
+			//	  throw BackendError.userIPBanned
+			//}
+		
 			//Now set the newest WebSocket
-			user.ip = message.peerHostname!
+			user.ip = (message.peerHostname?.string)!
 			user.socket = socket
+			user.isAuthed = true
 			canvas.connections[user] = socket
 			
 			//Update user tileCount based on diff of last login and now
@@ -165,7 +180,6 @@ extension Droplet {
 			let tilesToAdd = diffSeconds / Int64(user.tileRegenSeconds)
 			user.remainingTiles += Int(tilesToAdd >= Int64(user.maxTiles) ? Int64(user.maxTiles - user.remainingTiles) : tilesToAdd)
 			
-			//TODO: provide tile and color stats
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "reAuthSuccessful",
 			                  "remainingTiles": user.remainingTiles])
@@ -175,7 +189,6 @@ extension Droplet {
 			user.sendJSON(json: json)
 			
 			//Now save this new user data to DB
-			
 			try user.save()
 			
 			//And return it for the state
@@ -203,6 +216,7 @@ extension Droplet {
 		}
 		
 		// Responses
+		//TODO: user-specific color lists
 		func sendColors(json: JSON, user: User) throws {
 			
 			guard let userID = json.object?["userID"]?.string else {
@@ -238,6 +252,10 @@ extension Droplet {
 				throw BackendError.invalidUserID
 			}
 			
+			guard user.isAuthed else {
+				throw BackendError.notAuthenticated
+			}
+			
 			var structure: [[String: NodeRepresentable]] = canvas.tiles.map { tile in
 				return [
 					"colorID": tile.color
@@ -265,6 +283,11 @@ extension Droplet {
 			guard let userID = json.object?["userID"]?.string else {
 				throw BackendError.noUserID
 			}
+			
+			guard user.isAuthed else {
+				throw BackendError.notAuthenticated
+			}
+			
 			guard let Xcoord = json.object?["X"]?.int else {
 				throw BackendError.parameterMissingX
 			}
@@ -288,7 +311,7 @@ extension Droplet {
 		
 		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
 		//User requests
-		func handleTilePlace(json: JSON) throws {
+		func handleTilePlace(json: JSON, user: User) throws {
 			//First get params
 			guard let userID = json.object?["userID"]?.string else {
 				throw BackendError.noUserID
@@ -305,6 +328,10 @@ extension Droplet {
 			
 			guard userForUUID(uuid: userID).remainingTiles > 0 else {
 				throw BackendError.noTilesRemaining
+			}
+			
+			guard user.isAuthed else {
+				throw BackendError.notAuthenticated
 			}
 			
 			//Verifications here (uuid valid? tiles available? etc)
@@ -329,6 +356,12 @@ extension Droplet {
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
 			
 			try canvas.tiles[Xcoord + Ycoord * canvas.width].save()
+			
+			//Update user tileCount
+			user.remainingTiles -= 1
+			user.totalTilesPlaced += 1
+			//Save to DB
+			try user.save()
 			
 			//And finally send this update out to other clients
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])

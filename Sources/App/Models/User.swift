@@ -10,14 +10,14 @@ import Vapor
 import FluentProvider
 
 final class User: Hashable, Model {
-	//funcs for UUID gen, username store, getUser from DB, etc
 	var username: String? = nil //Username is optional
 	var uuid: String			//uuid is mandatory
 	var ip: String
 	var socket: WebSocket? = nil
+	var isAuthed: Bool = false
 
 	let storage = Storage()
-	let maxTiles = 60 //Constant for now
+	var maxTiles = 60
 
 	var availableColors: [Int] //ColorID array
 	var remainingTiles: Int
@@ -34,6 +34,7 @@ final class User: Hashable, Model {
 		self.totalTilesPlaced = try row.get("totalTilesPlaced")
 		self.lastConnected = try row.get("lastConnected")
 		self.availableColors = User.makeColorListFromString(colors: try row.get("availableColors"))
+		self.isAuthed = false
 	}
 
 	//DB requirements
@@ -65,13 +66,14 @@ final class User: Hashable, Model {
 	//New user
 	init() {
 		//TODO: Check from DB to make sure this UUID doesn't exist already.
-		self.uuid = User.randomUUID(length: 20)
+		self.uuid = ""//User.randomUUID(length: 20)
 		self.availableColors = []
-		self.remainingTiles = 60
-		self.tileRegenSeconds = 30
+		self.remainingTiles = 0
+		self.tileRegenSeconds = 10
 		self.totalTilesPlaced = 0
 		self.lastConnected = 0
 		self.ip = ""
+		self.isAuthed = false
 	}
 
 	func sendJSON(json: JSON) {
