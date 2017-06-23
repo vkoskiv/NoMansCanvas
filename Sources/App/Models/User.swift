@@ -83,19 +83,6 @@ final class User: Hashable, Model {
 			print("Failed to send \(String(describing: try? json.serialize().makeString())) to \(self.uuid)!")
 		}
 	}
-
-	class func randomUUID(length: Int) -> String {
-		let charset: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-		var randString: String = ""
-		for _ in 0..<length {
-			#if os(Linux)
-			randString.append(charset[charset.index(charset.startIndex, offsetBy: Int(random() % Int(charset.characters.count)))])
-			#else
-			randString.append(charset[charset.index(charset.startIndex, offsetBy: Int(arc4random_uniform(UInt32(charset.characters.count))))])
-			#endif
-		}
-		return randString
-	}
 }
 
 func ==(lhs: User, rhs: User) -> Bool {

@@ -1,4 +1,5 @@
 @_exported import Vapor
+import Foundation
 
 let canvas = Canvas()
 
@@ -132,7 +133,7 @@ extension Droplet {
 			user.tileRegenSeconds = 10
 			user.totalTilesPlaced = 0
 			
-			user.uuid = User.randomUUID(length: 20)
+			user.uuid = UUID().uuidString
 			canvas.connections[user] = socket
 			
 			//Send back generated UUID
@@ -226,7 +227,7 @@ extension Droplet {
 		
 		//TODO: Use a raw base64 binary for this possibly
 		func sendCanvas(json: JSON, user: User) throws {
-			guard let userID = json.object?["userID"]?.string else {
+			guard let userID = json["userID"]?.string else {
 				throw BackendError.noUserID
 			}
 			
