@@ -86,8 +86,10 @@ extension Droplet {
 						switch (reqType) {
 						case "initialAuth":
 							user = try initialAuth(message: message, socket: webSocket)
+							sendUserCount()
 						case "auth":
 							user = try reAuth(json: json, message: message, socket: webSocket)
+							sendUserCount()
 						case "getCanvas":
 							try sendCanvas(json: json, user: user)
 						case "postTile":
@@ -118,6 +120,7 @@ extension Droplet {
 				
 				print("User \(u.uuid) at \(u.ip) disconnected")
 				canvas.connections.removeValue(forKey: u)
+				sendUserCount()
 			}
 		}
 		
@@ -199,6 +202,18 @@ extension Droplet {
 		}
 		
 		// Responses
+		//Send user count update to all clients
+		func sendUserCount() {
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "userCount",
+			                  "count": canvas.connections.count])
+			guard let json = try? JSON(node: structure) else {
+				print("Failed to create user count JSON")
+				return
+			}
+			canvas.sendJSON(json: json)
+		}
+		
 		//TODO: user-specific color lists
 		func sendColors(json: JSON, user: User) throws {
 			
@@ -220,6 +235,7 @@ extension Droplet {
 					"ID": color.ID])
 			}
 			guard let json = try? JSON(node: structure) else {
+				print("Failed to create colorList JSON")
 				return
 			}
 			user.sendJSON(json: json)

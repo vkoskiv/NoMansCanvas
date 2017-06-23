@@ -80,7 +80,7 @@ final class User: Hashable, Model {
 		do {
 			try self.socket?.send(json.serialize().makeString())
 		} catch {
-			print("Failed to send \(String(describing: try? json.serialize().makeString())) to \(self.uuid)!")
+			print("Failed to send JSON to \(self.uuid)!")
 		}
 	}
 }
