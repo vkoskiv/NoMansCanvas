@@ -38,11 +38,12 @@ class Canvas {
 	
 	//Send to all users
 	func sendJSON(json: JSON) {
-		for (_, socket) in connections {
+		for (user, socket) in connections {
 			do {
 				try socket.send(json.serialize().makeString())
 			} catch {
-				print("Failed to send \(String(describing: try? json.serialize().makeString())) to all users")
+				try? socket.close()
+				canvas.connections.removeValue(forKey: user)
 			}
 		}
 	}

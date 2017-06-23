@@ -18,6 +18,8 @@ enum BackendError: Error {
 	case userNotFound
 	case notAuthenticated
 	case invalidRequestType
+	case userNameTaken
+	case userNameAlreadySet
 	case noUserID
 	case userIPBanned
 	case parameterMissingX
@@ -25,6 +27,7 @@ enum BackendError: Error {
 	case invalidCoordinates
 	case invalidColorID
 	case parameterMissingColorID
+	case parameterMissingName
 	case noTilesRemaining
 	case userIDMismatch
 	case none
@@ -94,6 +97,8 @@ extension Droplet {
 							try sendCanvas(json: json, user: user)
 						case "postTile":
 							try handleTilePlace(json: json, user: user)
+						case "setUsername":
+							try setUsername(json: json, user: user)
 						case "postColor":
 							try handleAddColor(json: json)
 						case "getColors":
@@ -118,7 +123,7 @@ extension Droplet {
 				u.lastConnected = Int64(Date().timeIntervalSince1970)
 				try u.save()
 				
-				print("User \(u.uuid) at \(u.ip) disconnected")
+				print("User \(u.uuid) disconnected")
 				canvas.connections.removeValue(forKey: u)
 				sendUserCount()
 			}
@@ -127,7 +132,6 @@ extension Droplet {
 		//Authentication
 		func initialAuth(message: Request, socket: WebSocket) throws -> User {
 			let user = User()
-			user.ip = (message.peerHostname?.string)!
 			user.socket = socket
 			user.username = "Anonymous"
 			user.isAuthed = true
@@ -166,12 +170,12 @@ extension Droplet {
 				throw BackendError.userNotFound
 			}
 			
-			//guard user.isBanned == false else {
-			//	  throw BackendError.userIPBanned
-			//}
+			/*guard !user.isShadowBanned else {
+				try socket.close()
+				throw BackendError.userIPBanned
+			}*/
 		
 			//Now set the newest WebSocket
-			user.ip = (message.peerHostname?.string)!
 			user.socket = socket
 			user.isAuthed = true
 			canvas.connections[user] = socket
@@ -310,6 +314,50 @@ extension Droplet {
 		
 		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
 		//User requests
+		
+		func userNameExists(name: String) -> Bool {
+			return false
+		}
+		
+		func setUsername(json: JSON, user: User) throws {
+			//Get parameters
+			guard let userID = json["userID"]?.string else {
+				throw BackendError.noUserID
+			}
+			guard let proposedName = json["name"]?.string else {
+				throw BackendError.parameterMissingName
+			}
+			//Check if user is authenticated
+			guard user.isAuthed else {
+				throw BackendError.notAuthenticated
+			}
+			//Verify given UUID
+			guard user.uuid == userID else {
+				throw BackendError.userIDMismatch
+			}
+			//Make sure this user hasn't already set their username
+			guard !user.hasSetUsername else {
+				throw BackendError.userNameAlreadySet
+			}
+			//Check if the proposed username exists already
+			guard !userNameExists(name: proposedName) else {
+				throw BackendError.userNameTaken
+			}
+			//All good, set the username
+			user.username = proposedName
+			
+			try user.save()
+			
+			//And send back status
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "nameSetSuccess"])
+			guard let json = try? JSON(node: structure) else {
+				print("Failed to create userName set JSON")
+				return
+			}
+			user.sendJSON(json: json)
+		}
+		
 		func handleTilePlace(json: JSON, user: User) throws {
 			//First get params
 			guard let userID = json.object?["userID"]?.string else {
@@ -410,6 +458,12 @@ extension Droplet {
 				errorMessage = "No tiles remaining!"
 			case BackendError.userIDMismatch:
 				errorMessage = "User ID Mismatch! Reauthenticate maybe."
+			case BackendError.userNameTaken:
+				errorMessage = "Username has been taken already!"
+			case BackendError.userNameAlreadySet:
+				errorMessage = "Username can only be set once."
+			case BackendError.parameterMissingName:
+				errorMessage = "Missing name parameter!"
 			default:
 				print(error)
 			}

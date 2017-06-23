@@ -24,5 +24,7 @@ extension Config {
         preparations.append(Post.self)
 		preparations.append(Tile.self)
 		preparations.append(User.self)
+		preparations.append(UserModify.self)
+		preparations.append(UserModify2.self)
     }
 }
