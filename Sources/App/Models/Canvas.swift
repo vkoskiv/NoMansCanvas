@@ -29,6 +29,7 @@ class Canvas {
 		                  "colorID": tile.color])
 		//Create json
 		guard let json = try? JSON(node: structure) else {
+			print("Failed to create JSON in updateTileToClients()")
 			return
 		}
 		//Send to all connected users
@@ -38,7 +39,11 @@ class Canvas {
 	//Send to all users
 	func sendJSON(json: JSON) {
 		for (_, socket) in connections {
-			try? socket.send(json.serialize().makeString())
+			do {
+				try socket.send(json.serialize().makeString())
+			} catch {
+				print("Failed to send \(String(describing: try? json.serialize().makeString())) to all users")
+			}
 		}
 	}
 	

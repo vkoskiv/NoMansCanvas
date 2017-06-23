@@ -77,7 +77,11 @@ final class User: Hashable, Model {
 	}
 
 	func sendJSON(json: JSON) {
-		try? self.socket?.send(json.serialize().makeString())
+		do {
+			try self.socket?.send(json.serialize().makeString())
+		} catch {
+			print("Failed to send \(String(describing: try? json.serialize().makeString())) to \(self.uuid)!")
+		}
 	}
 
 	class func randomUUID(length: Int) -> String {

@@ -25,6 +25,7 @@ enum BackendError: Error {
 	case invalidColorID
 	case parameterMissingColorID
 	case noTilesRemaining
+	case userIDMismatch
 	case none
 }
 
@@ -53,12 +54,15 @@ extension Droplet {
 						var structure = [[String: NodeRepresentable]]()
 						structure.append(["responseType": "incrementTileCount",
 						                  "amount": 1])
-						let json = try? JSON(node: structure)
-						
-						user.remainingTiles += 1
-						try? user.save()
-						
-						try? webSocket.send((json?.serialize().makeString())!)
+						do {
+							let json = try JSON(node: structure)
+							user.remainingTiles += 1
+							try user.save()
+							try webSocket.send(json.serialize().makeString())
+						} catch {
+							print("Error: \(error)")
+							sendError(error: error, socket: webSocket)
+						}
 					}
 					self.console.wait(seconds: Double(user.tileRegenSeconds))
 				}
@@ -109,7 +113,6 @@ extension Droplet {
 				let u = user
 				//Update lastConnected and save to DB
 				u.lastConnected = Int64(Date().timeIntervalSince1970)
-				//u.remainingTiles = (user?.remainingTiles)!
 				try u.save()
 				
 				print("User \(u.uuid) at \(u.ip) disconnected")
@@ -192,26 +195,6 @@ extension Droplet {
 			
 			//And return it for the state
 			return user
-		}
-		
-		func userForUUID(uuid: String) -> User {
-			var user: User!
-			canvas.connections.forEach { dict in
-				if dict.key.uuid == uuid {
-					user = dict.key
-				}
-			}
-			return user
-		}
-		
-		func colorForID(colorID: Int) -> TileColor {
-			var color: TileColor!
-			canvas.colors.forEach { c in
-				if c.ID == colorID {
-					color = c
-				}
-			}
-			return color
 		}
 		
 		// Responses
@@ -325,12 +308,16 @@ extension Droplet {
 				throw BackendError.parameterMissingColorID
 			}
 			
-			guard userForUUID(uuid: userID).remainingTiles > 0 else {
+			guard user.remainingTiles > 0 else {
 				throw BackendError.noTilesRemaining
 			}
 			
 			guard user.isAuthed else {
 				throw BackendError.notAuthenticated
+			}
+			
+			guard user.uuid == userID else {
+				throw BackendError.userIDMismatch
 			}
 			
 			//Verifications here (uuid valid? tiles available? etc)
@@ -354,7 +341,11 @@ extension Droplet {
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
 			
-			try canvas.tiles[Xcoord + Ycoord * canvas.width].save()
+			do {
+				try canvas.tiles[Xcoord + Ycoord * canvas.width].save()
+			} catch {
+				print("Failed to save tile to DB!")
+			}
 			
 			//Update user tileCount
 			user.remainingTiles -= 1
@@ -366,12 +357,6 @@ extension Droplet {
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
 		}
 		
-		/*TODO:
-			Canvas DB integration
-			color add handling
-			tilesRemaining handling
-			
-		*/
 		func handleAddColor(json: JSON) throws {
 			//TODO: Create handleAddColor()
 		}
@@ -406,6 +391,8 @@ extension Droplet {
 				errorMessage = "Not authenticated yet."
 			case BackendError.noTilesRemaining:
 				errorMessage = "No tiles remaining!"
+			case BackendError.userIDMismatch:
+				errorMessage = "User ID Mismatch! Reauthenticate maybe."
 			default:
 				print(error)
 			}
