@@ -288,7 +288,6 @@ extension Droplet {
 			return true
 		}
 		
-		//- "getTileData"  params: "userID", "X", "Y" (Not finished)
 		func sendTileData(json: JSON, user: User) throws {
 			//Get params
 			guard let userID = json.object?["userID"]?.string else {
@@ -317,7 +316,18 @@ extension Droplet {
 			}
 			//Get tile data and return it
 			
+			let placerName = canvas.tiles[Xcoord + Ycoord * canvas.width].placer.username
+			let placeTime = canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime
 			
+			var structure = [[String: NodeRepresentable]]()
+			structure.append(["responseType": "tileData",
+			                  "placerName": placerName,
+			                  "placeTime": placeTime])
+			guard let json = try? JSON(node: structure) else {
+				print("Failed to create tileInfo set JSON")
+				return
+			}
+			user.sendJSON(json: json)
 		}
 		
 		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
