@@ -18,10 +18,10 @@ final class User: Hashable, Model {
 	var isShadowBanned: Bool
 
 	let storage = Storage()
-	var maxTiles = 60
 
 	var availableColors: [Int] //ColorID array
 	var remainingTiles: Int
+	var maxTiles: Int
 	var tileRegenSeconds: Int
 	var totalTilesPlaced: Int
 	var level: Int
@@ -31,6 +31,7 @@ final class User: Hashable, Model {
 		self.username = try row.get("username")
 		self.uuid = try row.get("uuid")
 		self.remainingTiles = try row.get("remainingTiles")
+		self.maxTiles = try row.get("maxTiles")
 		self.tileRegenSeconds = try row.get("tileRegenSeconds")
 		self.totalTilesPlaced = try row.get("totalTilesPlaced")
 		self.lastConnected = try row.get("lastConnected")
@@ -47,6 +48,7 @@ final class User: Hashable, Model {
 		try row.set("username", username)
 		try row.set("uuid", uuid)
 		try row.set("remainingTiles", remainingTiles)
+		try row.set("maxTiles", maxTiles)
 		try row.set("tileRegenSeconds", tileRegenSeconds)
 		try row.set("totalTilesPlaced", totalTilesPlaced)
 		try row.set("lastConnected", lastConnected)
@@ -75,7 +77,8 @@ final class User: Hashable, Model {
 		self.uuid = ""//User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 0
-		self.tileRegenSeconds = 100
+		self.maxTiles = 60
+		self.tileRegenSeconds = 30
 		self.totalTilesPlaced = 0
 		self.level = 0
 		self.lastConnected = 0
@@ -130,11 +133,20 @@ struct UserModify: Preparation {
 	}
 	static func revert(_ database: Database) throws {}
 }
-
+//Add isShadowBanned field
 struct UserModify2: Preparation {
 	static func prepare(_ database: Database) throws {
 		try database.modify(User.self) { users in
 			users.bool("isShadowBanned")
+		}
+	}
+	static func revert(_ database: Database) throws {}
+}
+//Add maxTiles field
+struct WhyDoIKeepForgettingThese: Preparation {
+	static func prepare(_ database: Database) throws {
+		try database.modify(User.self) { users in
+			users.int("maxTiles")
 		}
 	}
 	static func revert(_ database: Database) throws {}

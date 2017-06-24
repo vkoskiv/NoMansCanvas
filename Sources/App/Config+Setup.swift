@@ -26,5 +26,6 @@ extension Config {
 		preparations.append(User.self)
 		preparations.append(UserModify.self)
 		preparations.append(UserModify2.self)
+		preparations.append(WhyDoIKeepForgettingThese.self)
     }
 }
