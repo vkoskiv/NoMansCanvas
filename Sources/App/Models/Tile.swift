@@ -28,7 +28,7 @@ final class Coord {
 final class Tile: Model {
 	var pos = Coord()
 	var color: Int //Color ID
-	var placeTime = String() //YYYY-mm-dd
+	var placeTime: Int64 //Unix timestamp
 	var placer = User()
 	
 	let storage = Storage()
@@ -37,7 +37,7 @@ final class Tile: Model {
 	init() {
 		pos = Coord(x: 0, y: 0)
 		color = 3
-		placeTime = String()
+		placeTime = 0
 		placer = User()
 	}
 	
@@ -48,6 +48,7 @@ final class Tile: Model {
 		self.color = try row.get("colorID")
 		//TODO: get full user with UUID here
 		self.placer.uuid = try row.get("lastModifier")
+		self.placeTime = try row.get("placeTime")
 	}
 	
 	/*func getDateString() -> String {
@@ -62,6 +63,7 @@ final class Tile: Model {
 		try row.set("Y", pos.y)
 		try row.set("colorID", color)
 		try row.set("lastModifier", placer.uuid)
+		try row.set("placeTime", placeTime)
 		return row
 	}
 }
@@ -81,4 +83,13 @@ extension Tile: Preparation {
 	static func revert(_ database: Database) throws {
 		try database.delete(self)
 	}
+}
+
+struct TileModify: Preparation {
+	static func prepare(_ database: Database) throws {
+		try database.modify(Tile.self) { tiles in
+			tiles.bigInteger("placeTime")
+		}
+	}
+	static func revert(_ database: Database) throws {}
 }

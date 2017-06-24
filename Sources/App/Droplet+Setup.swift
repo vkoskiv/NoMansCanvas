@@ -147,7 +147,11 @@ extension Droplet {
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "authSuccessful",
 			                  "uuid": user.uuid,
-			                  "remainingTiles": user.remainingTiles])
+			                  "remainingTiles": user.remainingTiles,
+			                  "level": user.level,
+			                  "maxTiles": user.maxTiles,
+			                  "tilesToNextLevel": user.tilesToNextLevel,
+			                  "levelProgress": user.levelProgress])
 			
 			let json = try JSON(node: structure)
 			
@@ -192,7 +196,11 @@ extension Droplet {
 			
 			var structure = [[String: NodeRepresentable]]()
 			structure.append(["responseType": "reAuthSuccessful",
-			                  "remainingTiles": user.remainingTiles])
+			                  "remainingTiles": user.remainingTiles,
+			                  "maxTiles": user.maxTiles,
+			                  "level": user.level,
+			                  "levelProgress": user.levelProgress,
+			                  "tilesToNextLevel": user.tilesToNextLevel])
 			
 			let json = try JSON(node: structure)
 			
@@ -304,12 +312,12 @@ extension Droplet {
 					throw BackendError.invalidCoordinates
 			}
 			//Verify userID
-			guard try userIDValid(id: userID) else {
+			guard user.uuid == userID else {
 				throw BackendError.invalidUserID
 			}
 			//Get tile data and return it
 			
-			//TODO: Finish sendTileData()
+			
 		}
 		
 		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
@@ -404,7 +412,7 @@ extension Droplet {
 			//Then update canvas
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = user
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
-			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = String() //This current time
+			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Int64(Date().timeIntervalSince1970) //This current time
 			
 			do {
 				try canvas.tiles[Xcoord + Ycoord * canvas.width].save()
@@ -415,11 +423,45 @@ extension Droplet {
 			//Update user tileCount
 			user.remainingTiles -= 1
 			user.totalTilesPlaced += 1
+			
+			//Update level status
+			user.levelProgress += 1
+			if user.levelProgress >= user.tilesToNextLevel {
+				try levelUp(user: user)
+			}
+			
 			//Save to DB
 			try user.save()
 			
 			//And finally send this update out to other clients
 			canvas.updateTileToClients(tile: canvas.tiles[Xcoord + Ycoord * canvas.width])
+		}
+		
+		func levelUp(user: User) throws {
+			/*guard user.levelProgress >= user.tilesToNextLevel else {
+				throw
+			}*/
+			user.level += 1
+			user.maxTiles += 20
+			user.tilesToNextLevel += 20
+			user.levelProgress = 0
+			user.remainingTiles = user.maxTiles
+			
+			try user.save()
+			
+			//And send reply
+			var structure = [[String:NodeRepresentable]]()
+			structure.append(["responseType": "levelUp",
+			                  "level": user.level,
+			                  "maxTiles": user.maxTiles,
+			                  "tilesToNextLevel": user.tilesToNextLevel,
+			                  "levelProgress": user.levelProgress,
+			                  "remainingTiles": user.remainingTiles])
+			guard let json = try? JSON(node: structure) else {
+				print("Failed to create levelUp JSON")
+				return
+			}
+			user.sendJSON(json: json)
 		}
 		
 		func handleAddColor(json: JSON) throws {

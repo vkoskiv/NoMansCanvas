@@ -24,6 +24,8 @@ final class User: Hashable, Model {
 	var maxTiles: Int
 	var tileRegenSeconds: Int
 	var totalTilesPlaced: Int
+	var tilesToNextLevel: Int
+	var levelProgress: Int
 	var level: Int
 	var lastConnected: Int64 //Used to keep track of accumulated tiles while disconnected, unix epoch
 
@@ -38,6 +40,8 @@ final class User: Hashable, Model {
 		self.hasSetUsername = try row.get("hasSetUsername")
 		self.isShadowBanned = try row.get("isShadowBanned")
 		self.level = try row.get("level")
+		self.tilesToNextLevel = try row.get("tilesToNextLevel")
+		self.levelProgress = try row.get("levelProgress")
 		self.availableColors = User.makeColorListFromString(colors: try row.get("availableColors"))
 		self.isAuthed = false
 	}
@@ -55,6 +59,8 @@ final class User: Hashable, Model {
 		try row.set("hasSetUsername", hasSetUsername)
 		try row.set("isShadowBanned", isShadowBanned)
 		try row.set("level", level)
+		try row.set("tilesToNextLevel", tilesToNextLevel)
+		try row.set("levelProgress", levelProgress)
 		try row.set("availableColors", User.getColorListString(colors: availableColors))
 		return row
 	}
@@ -81,6 +87,8 @@ final class User: Hashable, Model {
 		self.tileRegenSeconds = 30
 		self.totalTilesPlaced = 0
 		self.level = 0
+		self.tilesToNextLevel = 100
+		self.levelProgress = 0
 		self.lastConnected = 0
 		self.isAuthed = false
 		self.hasSetUsername = false
@@ -147,6 +155,16 @@ struct WhyDoIKeepForgettingThese: Preparation {
 	static func prepare(_ database: Database) throws {
 		try database.modify(User.self) { users in
 			users.int("maxTiles")
+		}
+	}
+	static func revert(_ database: Database) throws {}
+}
+//Add level progress fields
+struct UserModify4: Preparation {
+	static func prepare(_ database: Database) throws {
+		try database.modify(User.self) { users in
+			users.int("tilesToNextLevel")
+			users.int("levelProgress")
 		}
 	}
 	static func revert(_ database: Database) throws {}
