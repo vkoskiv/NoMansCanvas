@@ -330,9 +330,7 @@ extension Droplet {
 			user.sendJSON(json: json)
 		}
 		
-		//FIXME: pass user into handleTilePlace instead of UUID which COULD be faked, though it'd have to be valid
 		//User requests
-		
 		func userNameExists(name: String) -> Bool {
 			return false
 		}
