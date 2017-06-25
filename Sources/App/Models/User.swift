@@ -86,7 +86,7 @@ final class User: Hashable, Model {
 		self.maxTiles = 60
 		self.tileRegenSeconds = 30
 		self.totalTilesPlaced = 0
-		self.level = 0
+		self.level = 1
 		self.tilesToNextLevel = 100
 		self.levelProgress = 0
 		self.lastConnected = 0

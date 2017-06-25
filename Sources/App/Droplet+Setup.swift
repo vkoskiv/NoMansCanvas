@@ -451,9 +451,12 @@ extension Droplet {
 			}*/
 			user.level += 1
 			user.maxTiles += 20
-			user.tilesToNextLevel += 20
+			user.tilesToNextLevel += 100
 			user.levelProgress = 0
 			user.remainingTiles = user.maxTiles
+			if user.tileRegenSeconds > 10 {
+				user.tileRegenSeconds -= 1
+			}
 			
 			try user.save()
 			
