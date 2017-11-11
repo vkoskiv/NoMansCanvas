@@ -404,11 +404,16 @@ extension Droplet {
 			//Verifications here (uuid valid? tiles available? etc)
 			//Check that coordinates are valid
 			//FIXME: Negative values crash here
-			guard Xcoord <= canvas.width,
-				  Ycoord <= canvas.height else {
+			guard Xcoord < canvas.width,
+				  Ycoord < canvas.height else {
 					throw BackendError.invalidCoordinates
 			}
 			
+			guard Xcoord > -1,
+				Ycoord > -1 else {
+				throw BackendError.invalidCoordinates
+			}
+
 			//Verify userID is valid
 			guard try userIDValid(id: userID) else {
 				throw BackendError.invalidUserID
