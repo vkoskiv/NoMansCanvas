@@ -455,8 +455,8 @@ extension Droplet {
 				throw
 			}*/
 			user.level += 1
-			user.maxTiles += 20
-			user.tilesToNextLevel += 100
+			user.maxTiles += 100
+			user.tilesToNextLevel += 150
 			user.levelProgress = 0
 			user.remainingTiles = user.maxTiles
 			if user.tileRegenSeconds > 10 {

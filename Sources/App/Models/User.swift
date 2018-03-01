@@ -83,8 +83,8 @@ final class User: Hashable, Model {
 		self.uuid = ""//User.randomUUID(length: 20)
 		self.availableColors = []
 		self.remainingTiles = 0
-		self.maxTiles = 60
-		self.tileRegenSeconds = 30
+		self.maxTiles = 250
+		self.tileRegenSeconds = 10
 		self.totalTilesPlaced = 0
 		self.level = 1
 		self.tilesToNextLevel = 100
