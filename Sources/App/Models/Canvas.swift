@@ -36,6 +36,40 @@ class Canvas {
 		sendJSON(json: json)
 	}
 	
+	func sendAnnouncement(msg: String) {		
+		var structure = [[String: NodeRepresentable]]()
+		structure.append(["responseType": "announcement",
+						  "message": msg])
+		
+		guard let json = try? JSON(node: structure) else {
+			print("Failed to create JSON in sendAnnouncement()")
+			return
+		}
+		
+		sendJSON(json: json)
+	}
+	
+	func shutdown() {
+		var structure = [[String: NodeRepresentable]]()
+		structure.append(["responseType": "disconnecting"])
+		
+		guard let json = try? JSON(node: structure) else {
+			print("Failed to create JSON in shutdown()")
+			return
+		}
+		
+		for (user, socket) in connections {
+			do {
+				try socket.send(json.serialize().makeString())
+				try socket.close()
+				canvas.connections.removeValue(forKey: user)
+			} catch {
+				print("oops?")
+			}
+		}
+		print("Closed all connections.")
+	}
+	
 	//Send to all users
 	func sendJSON(json: JSON) {
 		for (user, socket) in connections {
