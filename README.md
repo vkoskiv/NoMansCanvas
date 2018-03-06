@@ -30,7 +30,8 @@ The frontend client can be found [here](https://github.com/EliasHaaralahti/No-Ma
 This project requires the [Vapor](https://vapor.codes) framework, and [Swift](https://swift.org)
 
 You also need a `mysql` db, and the `cmysql` library installed. Configure in Config/mysql.json
-For debugging, you could also switch to an in-memory DB, but I don't think the current schema suppports it.
+
+For debugging, you could also switch to an in-memory DB, but I don't think the current schema supports it.
 
 ## Authors
 
