@@ -14,8 +14,11 @@ No Man's Canvas is a Jyväskylä University project to recreate Reddit's /r/plac
 ## Installation
 
 git clone https://github.com/VKoskiv/NoMansCanvas
+
 cd NoMansCanvas
+
 vapor build
+
 vapor run serve
 
 This deploys by default on localhost:8080, configurable in Config/server.json
@@ -25,6 +28,9 @@ This deploys by default on localhost:8080, configurable in Config/server.json
 The frontend client can be found [here](https://github.com/EliasHaaralahti/No-Mans-Canvas-Client)
 
 This project requires the [Vapor](https://vapor.codes) framework, and [Swift](https://swift.org)
+
+You also need a `mysql` db, and the `cmysql` library installed. Configure in Config/mysql.json
+For debugging, you could also switch to an in-memory DB, but I don't think the current schema suppports it.
 
 ## Authors
 
