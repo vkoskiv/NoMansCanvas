@@ -65,7 +65,7 @@ extension Droplet {
 							try webSocket.send(json.serialize().makeString())
 						} catch {
 							print("Error: \(error)")
-							sendError(error: error, socket: webSocket)
+							//sendError(error: error, socket: webSocket)
 						}
 					}
 					self.console.wait(seconds: Double(user.tileRegenSeconds))
@@ -110,7 +110,7 @@ extension Droplet {
 							throw BackendError.invalidRequestType
 						}
 					} catch {
-						sendError(error: error, socket: webSocket)
+						//sendError(error: error, socket: webSocket)
 					}
 				}
 			}
