@@ -94,6 +94,7 @@ class Canvas {
 			TileColor(color: Color(with: 219,	green: 0,	blue: 5	),		id: 0),//Red
 			TileColor(color: Color(with: 252,	green: 145,	blue: 199),		id: 8),//Pink
 			TileColor(color: Color(with: 142,	green: 87,	blue: 51),		id: 12),//Brown
+			TileColor(color: Color(with: 189,       green: 161,   blue: 113),          id: 16),//Light brown
 			TileColor(color: Color(with: 255,	green: 153, blue: 51),		id: 7),//Orange
 			TileColor(color: Color(with: 255,	green: 255, blue: 0),		id: 9),//Yellow
 			TileColor(color: Color(with: 133,	green: 222, blue: 53),		id: 1),//Green
