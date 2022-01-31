@@ -1,9 +1,11 @@
 import FluentProvider
 import MySQLProvider
+import Glibc
 
 extension Config {
     public func setup() throws {
-        // allow fuzzy conversions for these types
+        setbuf(stdout, nil)
+	// allow fuzzy conversions for these types
         // (add your own types here)
         Node.fuzzy = [Row.self, JSON.self, Node.self]
 
