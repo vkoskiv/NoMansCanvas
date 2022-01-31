@@ -13,8 +13,8 @@ class Canvas {
 	//Connection is a key-val pair; User:WebSocket
 	var connections: [User: WebSocket]
 	var tiles: [Tile] = []
-	var width: Int = 250
-	var height: Int = 250
+	var width: Int = 512
+	var height: Int = 512
 	
 	//Colors, people may add additional ones
 	var colors: [TileColor]
