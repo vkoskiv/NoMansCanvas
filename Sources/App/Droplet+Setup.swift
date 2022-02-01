@@ -3,6 +3,10 @@ import Foundation
 
 let canvas = Canvas()
 
+var state: [NodeRepresentable] = canvas.tiles.map { tile in
+	return tile.color
+}
+
 /*
 TODO:
 
@@ -252,6 +256,22 @@ extension Droplet {
 			}
 			user.sendJSON(json: json)
 		}
+	
+		func stringify(json: Any, prettyPrinted: Bool = false) -> String {
+			var options: JSONSerialization.WritingOptions = []
+			if prettyPrinted {
+				options = JSONSerialization.WritingOptions.prettyPrinted
+			}
+			do {
+				let data = try JSONSerialization.data(withJSONObject: json, options: options)
+				if let string = String(data: data, encoding: String.Encoding.utf8) {
+					return string
+				}
+			} catch {
+				print(error)
+			}
+			return ""
+		}	
 		
 		//TODO: Use a raw base64 binary for this possibly
 		func sendCanvas(json: JSON, user: User) throws {
@@ -267,18 +287,12 @@ extension Droplet {
 				throw BackendError.notAuthenticated
 			}
 			
-			var structure: [[String: NodeRepresentable]] = canvas.tiles.map { tile in
-				return [
-					"colorID": tile.color
-				]
-			}
+			// Grab the existing state
+			var structure: [NodeRepresentable] = state
 			structure.insert(["responseType": "fullCanvas"], at: 0)
-			
-			guard let json = try? JSON(node: structure) else {
-				return
-			}
-			print("Sending Canvas: \((try json.serialize().count)/1024)KB")
-			user.sendJSON(json: json)
+			let string = stringify(json: structure)
+			print("Sending Canvas: \((string.count)/1024)KB")
+			user.sendString(string: string)
 		}
 		
 		func userIDValid(id: String) throws -> Bool {
@@ -426,6 +440,9 @@ extension Droplet {
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placer = user
 			canvas.tiles[Xcoord + Ycoord * canvas.width].color  = colorID
 			canvas.tiles[Xcoord + Ycoord * canvas.width].placeTime = Int64(Date().timeIntervalSince1970) //This current time
+			
+			//Update prepared state cache
+			state[Xcoord + Ycoord * canvas.width] = colorID
 			
 			do {
 				try canvas.tiles[Xcoord + Ycoord * canvas.width].save()

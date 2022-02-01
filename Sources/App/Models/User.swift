@@ -103,6 +103,15 @@ final class User: Hashable, Model {
 			canvas.connections.removeValue(forKey: self)
 		}
 	}
+
+	func sendString(string: String) {
+		do {
+			try self.socket?.send(string)
+		} catch {
+			try? self.socket?.close()
+			canvas.connections.removeValue(forKey: self)
+		}
+	}
 }
 
 func ==(lhs: User, rhs: User) -> Bool {
