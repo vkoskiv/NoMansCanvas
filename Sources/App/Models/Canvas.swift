@@ -117,13 +117,13 @@ class Canvas {
 			print("Running first tile db init!")
 			for y in 0..<height {
 				for x in 0..<width {
-					let tile = Tile()
-					tile.pos = Coord(x: x, y: y)
-					tile.color = 3
-					//Only run once, check the row count
-					try? tile.save()
-					self.tiles.append(tile)
+					try? Tile.database?.raw("INSERT INTO `tiles` (X, Y, colorID, lastModifier, placeTime) VALUES (\(x), \(y), \(3), \"\", \(0))")
 				}
+			}
+			print("Tiles inserted. Loading.");
+			let createdTiles = try? Tile.makeQuery().all();
+			createdTiles?.forEach { dbTile in
+				self.tiles.append(dbTile);
 			}
 		} else {
 			print("Loading canvas from DB...")
