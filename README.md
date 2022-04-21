@@ -7,6 +7,14 @@
     </a>
 </center>
 
+### DEPRECATED
+
+This is the original backend server built in 2017. The new and (hopefully) last implementation can be found [here](https://github.com/vkoskiv/nmc2).
+
+You will likely run into issues trying to use this project. It's running an out-of-date version of Swift and the Vapor framework, both of which are no longer supported. I've had issues getting this to build on newer versions of Swift.
+
+The new implementation follows a more minimalistic approach. It's a small C program, only depending on a small set of high quality dependencies.
+
 ## Synopsis
 
 No Man's Canvas is a Jyväskylä University project to recreate Reddit's /r/place concept in a smaller scale.
